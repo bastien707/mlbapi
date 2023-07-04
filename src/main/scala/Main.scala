@@ -48,4 +48,5 @@ object MlbApi extends ZIOAppDefault {
 
   override def run: ZIO[Any, Throwable, Unit] =
     app.provide(createZIOPoolConfig >>> connectionPool, Server.default)
+    
 }
