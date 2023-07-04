@@ -22,7 +22,7 @@ object MlbApi extends ZIOAppDefault {
   reader.close()
 
   // Print the parsed data
-  mlbDataList.foreach(println)
+  //mlbDataList.foreach(println)
 
   val createZIOPoolConfig: ULayer[ZConnectionPoolConfig] =
     ZLayer.succeed(ZConnectionPoolConfig.default)
@@ -41,15 +41,12 @@ object MlbApi extends ZIOAppDefault {
   val create: ZIO[ZConnectionPool, Throwable, Unit] = transaction {
     execute(
       sql"""
-        CREATE TABLE games (
+        CREATE TABLE IF NOT EXISTS teams (
           id SERIAL PRIMARY KEY,
-          date DATE,
-          home_team_id INT,
-          away_team_id INT,
-          result VARCHAR(10),
-          FOREIGN KEY (home_team_id) REFERENCES teams(id),
-          FOREIGN KEY (away_team_id) REFERENCES teams(id)
-        )
+          name VARCHAR(255),
+          location VARCHAR(255),
+          logo_url VARCHAR(255)
+        );
       """
     )
   }
@@ -57,8 +54,11 @@ object MlbApi extends ZIOAppDefault {
   val insertRows: ZIO[ZConnectionPool, Throwable, UpdateResult] = transaction {
     insert(
       sql"""
-        INSERT INTO games (date, home_team_id, away_team_id, result)
-        VALUES ('2021-07-01', 1, 2, 'W')
+        INSERT INTO teams (name, location, logo_url)
+        VALUES ('Yankees', 'New York', 'https://upload.wikimedia.org/wikipedia/en/thumb/2/25/NewYorkYankees_PrimaryLogo.svg/1200px-NewYorkYankees_PrimaryLogo.svg.png');
+
+        INSERT INTO teams (name, location, logo_url)
+        VALUES ('Red Sox', 'Boston', 'https://upload.wikimedia.org/wikipedia/en/thumb/6/6d/RedSoxPrimary_HangingSocks.svg/1200px-RedSoxPrimary_HangingSocks.svg.png');
       """
     )
   }
@@ -66,7 +66,7 @@ object MlbApi extends ZIOAppDefault {
   val endpoints: App[Any] =
     Http
       .collect[Request] {
-        case Method.GET -> Root / "text" => Response.text("Hello World!")
+        case Method.GET -> Root / "init" => Response.text("Hello World!")
       /*  case Method.GET -> Root / "games" => ???
         case Method.GET -> Root / "predict" / "game" / gameId => ???*/
       }
