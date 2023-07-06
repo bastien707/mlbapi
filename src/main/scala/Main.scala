@@ -4,25 +4,107 @@ import zio._
 import zio.jdbc._
 import zio.http._
 import com.github.tototoshi.csv._
+import zio.stream.ZStream
 
 object MlbApi extends ZIOAppDefault {
 
   // Define a case class to represent each row in the CSV
-  case class MLBData(date: String, season: String, team1 : String, team2: String, elo1Pre: Float, elo2Pre: Float, eloProb1: Float, eloProb2: Float, rating1Pre: Float, rating2Pre: Float, ratingProb1: Float, ratingProb2: Float)
+  case class MLBData(
+      date: String,
+      season: String,
+      team1: String,
+      team2: String,
+      elo1Pre: Float,
+      elo2Pre: Float,
+      eloProb1: Float,
+      eloProb2: Float,
+      rating1Pre: Float,
+      rating2Pre: Float,
+      ratingProb1: Float,
+      ratingProb2: Float
+  )
 
   // Read the CSV file
-  val reader = CSVReader.open(new java.io.File("C:/Users/julie/Downloads/mlb-elo/mlb-elo/mlb_elo.csv"))
+  val reader = CSVReader.open(
+    new java.io.File(
+      "/Users/bastien/Dev/EFREI/M1/S8/functionalProgramming/mlb-elo/mlb_elo_latest.csv"
+    )
+  )
 
   // Parse the CSV data into a list of MLBData objects
   val mlbDataList = reader
     .allWithHeaders()
-    .map(row => MLBData(row("date"), row("season"), row("team1"), row("team2"), row("elo1_pre").toFloat, row("elo2_pre").toFloat, row("elo_prob1").toFloat, row("elo_prob2").toFloat, row("rating1_pre").toFloat, row("rating2_pre").toFloat, row("rating_prob1").toFloat, row("rating_prob2").toFloat))
-
+    .map(row =>
+      MLBData(
+        row("date"),
+        row("season"),
+        row("team1"),
+        row("team2"),
+        row("elo1_pre").toFloat,
+        row("elo2_pre").toFloat,
+        row("elo_prob1").toFloat,
+        row("elo_prob2").toFloat,
+        row("rating1_pre").toFloat,
+        row("rating2_pre").toFloat,
+        row("rating_prob1").toFloat,
+        row("rating_prob2").toFloat
+      )
+    )
   // Close the CSV reader
   reader.close()
 
-  // Print the parsed data
-  //mlbDataList.foreach(println)
+  val Teams =
+    mlbDataList.foldLeft(Set.empty[String]) { (distinctTeams, row) =>
+      distinctTeams + row.team1
+    }
+
+  val create: ZIO[ZConnectionPool, Throwable, Unit] = transaction {
+    execute(
+      sql"""
+        CREATE TABLE IF NOT EXISTS teams (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255)
+        );
+      """
+    )
+  }
+
+  val insertTeams: ZIO[ZConnectionPool, Throwable, UpdateResult] = transaction {
+    ZIO
+      .collectAll(
+        Teams.map { team =>
+          insert(
+            sql"""
+            INSERT INTO teams (name)
+            VALUES ($team)
+          """
+          )
+        }
+      )
+      .map(_.headOption.getOrElse(throw new Exception("No rows inserted")))
+  }
+
+  val countTeams: ZIO[ZConnectionPool, Throwable, Option[String]] =
+    transaction {
+      selectOne(
+        sql"SELECT COUNT(*) FROM teams".as[String]
+      )
+    }
+
+  val selectTeams: ZIO[ZConnectionPool, Throwable, zio.Chunk[String]] =
+    transaction {
+      selectAll(
+        sql"SELECT name FROM teams".as[String]
+      )
+    }
+
+  def getTeamInformation(teamName: String): ZIO[ZConnectionPool, Throwable, Option[String]] = transaction {
+    selectOne(
+      sql"""
+        SELECT name FROM teams WHERE name = $teamName
+      """.as[String]
+    )
+  }
 
   val createZIOPoolConfig: ULayer[ZConnectionPoolConfig] =
     ZLayer.succeed(ZConnectionPoolConfig.default)
@@ -32,52 +114,51 @@ object MlbApi extends ZIOAppDefault {
     "password" -> ""
   )
 
-  val connectionPool : ZLayer[ZConnectionPoolConfig, Throwable, ZConnectionPool] =
+  val connectionPool
+      : ZLayer[ZConnectionPoolConfig, Throwable, ZConnectionPool] =
     ZConnectionPool.h2mem(
       database = "testdb",
       props = properties
     )
 
-  val create: ZIO[ZConnectionPool, Throwable, Unit] = transaction {
-    execute(
-      sql"""
-        CREATE TABLE IF NOT EXISTS teams (
-          id SERIAL PRIMARY KEY,
-          name VARCHAR(255),
-          location VARCHAR(255),
-          logo_url VARCHAR(255)
-        );
-      """
-    )
-  }
-
-  val insertRows: ZIO[ZConnectionPool, Throwable, UpdateResult] = transaction {
-    insert(
-      sql"""
-        INSERT INTO teams (name, location, logo_url)
-        VALUES ('Yankees', 'New York', 'https://upload.wikimedia.org/wikipedia/en/thumb/2/25/NewYorkYankees_PrimaryLogo.svg/1200px-NewYorkYankees_PrimaryLogo.svg.png');
-
-        INSERT INTO teams (name, location, logo_url)
-        VALUES ('Red Sox', 'Boston', 'https://upload.wikimedia.org/wikipedia/en/thumb/6/6d/RedSoxPrimary_HangingSocks.svg/1200px-RedSoxPrimary_HangingSocks.svg.png');
-      """
-    )
-  }
-
-  val endpoints: App[Any] =
+  val endpoints: App[ZConnectionPool] =
     Http
-      .collect[Request] {
-        case Method.GET -> Root / "init" => Response.text("Hello World!")
-      /*  case Method.GET -> Root / "games" => ???
+      .collectZIO[Request] {
+
+        case Method.GET -> Root / "count" =>
+          for {
+            count: Option[String] <- countTeams
+            res: Response = count match
+              case Some(c) => Response.text(s"${c} teams")
+              case None    => Response.text("No team in historical data")
+          } yield res
+
+        case Method.GET -> Root / "teams" =>
+          for {
+            teams <- selectTeams
+            res = Response.json(
+              """{"teams": [""" + teams
+                .map(t => s""""$t"""")
+                .mkString(",") + """]})"""
+            )
+          } yield res
+
+        case Method.GET -> Root / "team" / teamName =>
+          getTeamInformation(teamName).map {
+            case Some(teamInfo) => Response.text(teamInfo)
+            case None =>
+              Response.text(s"No information found for team: $teamName")
+          }
+        /*  case Method.GET -> Root / "games" => ???
         case Method.GET -> Root / "predict" / "game" / gameId => ???*/
       }
       .withDefaultErrorResponse
 
   val app: ZIO[ZConnectionPool & Server, Throwable, Unit] = for {
-    conn <- create *> insertRows
+    conn <- create *> insertTeams
     _ <- Server.serve(endpoints)
   } yield ()
-   
+
   override def run: ZIO[Any, Throwable, Unit] =
     app.provide(createZIOPoolConfig >>> connectionPool, Server.default)
- 
 }
