@@ -4,25 +4,12 @@ import zio._
 import zio.jdbc._
 import zio.http._
 import com.github.tototoshi.csv._
-import zio.stream.ZStream
+import zio.json.EncoderOps
+import mlb.MLBData
+import mlb.Team
+import mlb.Score
 
 object MlbApi extends ZIOAppDefault {
-
-  // Define a case class to represent each row in the CSV
-  case class MLBData(
-      date: String,
-      season: String,
-      team1: String,
-      team2: String,
-      elo1Pre: Float,
-      elo2Pre: Float,
-      eloProb1: Float,
-      eloProb2: Float,
-      rating1Pre: Float,
-      rating2Pre: Float,
-      ratingProb1: Float,
-      ratingProb2: Float
-  )
 
   // Read the CSV file
   val reader = CSVReader.open(
@@ -53,6 +40,10 @@ object MlbApi extends ZIOAppDefault {
   // Close the CSV reader
   reader.close()
 
+  /***********************************/
+  /** Insert data into the database **/
+  /***********************************/
+
   val Teams =
     mlbDataList.foldLeft(Set.empty[String]) { (distinctTeams, row) =>
       distinctTeams + row.team1
@@ -63,7 +54,24 @@ object MlbApi extends ZIOAppDefault {
       sql"""
         CREATE TABLE IF NOT EXISTS teams (
           id SERIAL PRIMARY KEY,
-          name VARCHAR(255)
+          name VARCHAR(255),
+          elo FLOAT,
+          rating FLOAT
+        );
+        CREATE TABLE GAMES (
+          id SERIAL PRIMARY KEY,
+          date VARCHAR(255),
+          season VARCHAR(255),
+          team1 VARCHAR(255),
+          team2 VARCHAR(255),
+          elo1Pre FLOAT,
+          elo2Pre FLOAT,
+          eloProb1 FLOAT,
+          eloProb2 FLOAT,
+          rating1Pre FLOAT,
+          rating2Pre FLOAT,
+          ratingProb1 FLOAT,
+          ratingProb2 FLOAT
         );
       """
     )
@@ -75,14 +83,33 @@ object MlbApi extends ZIOAppDefault {
         Teams.map { team =>
           insert(
             sql"""
-            INSERT INTO teams (name)
-            VALUES ($team)
+            INSERT INTO teams (name, elo, rating)
+            VALUES ($team, 0, 0)
           """
           )
         }
       )
       .map(_.headOption.getOrElse(throw new Exception("No rows inserted")))
   }
+
+  val insertGames: ZIO[ZConnectionPool, Throwable, UpdateResult] = transaction {
+    ZIO
+      .collectAll(
+        mlbDataList.map { game =>
+          insert(
+            sql"""
+            INSERT INTO games (date, season, team1, team2, elo1Pre, elo2Pre, eloProb1, eloProb2, rating1Pre, rating2Pre, ratingProb1, ratingProb2)
+            VALUES (${game.date}, ${game.season}, ${game.team1}, ${game.team2}, ${game.elo1Pre}, ${game.elo2Pre}, ${game.eloProb1}, ${game.eloProb2}, ${game.rating1Pre}, ${game.rating2Pre}, ${game.ratingProb1}, ${game.ratingProb2})
+          """
+          )
+        }
+      )
+      .map(_.headOption.getOrElse(throw new Exception("No rows inserted")))
+  }
+
+  /***********************************/
+  /** Select data from the database **/
+  /***********************************/
 
   val countTeams: ZIO[ZConnectionPool, Throwable, Option[String]] =
     transaction {
@@ -91,20 +118,50 @@ object MlbApi extends ZIOAppDefault {
       )
     }
 
-  val selectTeams: ZIO[ZConnectionPool, Throwable, zio.Chunk[String]] =
+  val getGames: ZIO[ZConnectionPool, Throwable, zio.Chunk[MLBData]] = transaction {
+    selectAll(
+      sql"""
+        SELECT * FROM games
+      """.as[MLBData]
+    )
+  }
+
+  def getGames(team1: String, team2: String): ZIO[ZConnectionPool, Throwable, zio.Chunk[MLBData]] = transaction {
+    selectAll(
+      sql"""
+        SELECT * FROM games WHERE team1 = $team1 AND team2 = $team2
+      """.as[MLBData]
+    )
+  }
+
+  // if return type is Team this mean we select *
+  val selectTeams: ZIO[ZConnectionPool, Throwable, zio.Chunk[Team]] =
     transaction {
       selectAll(
-        sql"SELECT name FROM teams".as[String]
+        sql"SELECT * FROM teams".as[Team]
+      )
+    }
+  
+  def getRating(teamName: String): ZIO[ZConnectionPool, Throwable, zio.Chunk[Score]] = 
+    transaction {
+      selectAll(
+        sql"SELECT elo, rating FROM teams WHERE name = $teamName".as[Score]
       )
     }
 
-  def getTeamInformation(teamName: String): ZIO[ZConnectionPool, Throwable, Option[String]] = transaction {
+  def getTeamInformation(
+      teamName: String
+  ): ZIO[ZConnectionPool, Throwable, Option[Team]] = transaction {
     selectOne(
       sql"""
-        SELECT name FROM teams WHERE name = $teamName
-      """.as[String]
+        SELECT * FROM teams WHERE name = $teamName
+      """.as[Team]
     )
   }
+
+  /***************************************************/
+  /** Configuration for the ZIO JDBC connection pool */
+  /***************************************************/
 
   val createZIOPoolConfig: ULayer[ZConnectionPoolConfig] =
     ZLayer.succeed(ZConnectionPoolConfig.default)
@@ -121,41 +178,67 @@ object MlbApi extends ZIOAppDefault {
       props = properties
     )
 
+  /*******************************************/
+  /** Endpoints for the ZIO HTTP application */
+  /*******************************************/
+
   val endpoints: App[ZConnectionPool] =
     Http
       .collectZIO[Request] {
 
-        case Method.GET -> Root / "count" =>
+        case Method.GET -> Root / "team" / "count" =>
           for {
             count: Option[String] <- countTeams
             res: Response = count match
               case Some(c) => Response.text(s"${c} teams")
-              case None    => Response.text("No team in historical data")
+              case None => Response.text("No team in historical data")
           } yield res
 
-        case Method.GET -> Root / "teams" =>
+        case Method.GET -> Root / "team" / "all" =>
           for {
             teams <- selectTeams
+            teamsJson = teams.toJson
             res = Response.json(
-              """{"teams": [""" + teams
-                .map(t => s""""$t"""")
-                .mkString(",") + """]})"""
+              s"""{"teams": ${teamsJson.toString}}"""
             )
           } yield res
 
         case Method.GET -> Root / "team" / teamName =>
           getTeamInformation(teamName).map {
-            case Some(teamInfo) => Response.text(teamInfo)
-            case None =>
-              Response.text(s"No information found for team: $teamName")
+            case Some(team) => Response.json(s"""{"team": ${team.toJson.toString}}""")
+            case None => Response.text(s"No information found for team: $teamName")
           }
+
+        case Method.GET -> Root / "score" / teamName =>
+          getRating(teamName).map {
+            case Chunk(score) => Response.json(s"""{"${teamName}": ${score.toJson.toString}}""")
+            case _ => Response.text(s"No information found for team: $teamName")
+          }
+
+        case Method.GET -> Root / "games" / "all" =>
+          for {
+            games <- getGames
+            gamesJson = games.toJson
+            res = Response.json(
+              s"""{"games": ${gamesJson.toString}}"""
+            )
+          } yield res
+
+        case Method.GET -> Root / "games" / team1 / team2 =>
+          for {
+            games <- getGames(team1, team2)
+            gamesJson = games.toJson
+            res = Response.json(
+              s"""{"games": ${gamesJson.toString}}"""
+            )
+          } yield res
         /*  case Method.GET -> Root / "games" => ???
         case Method.GET -> Root / "predict" / "game" / gameId => ???*/
       }
       .withDefaultErrorResponse
 
   val app: ZIO[ZConnectionPool & Server, Throwable, Unit] = for {
-    conn <- create *> insertTeams
+    conn <- create *> insertTeams *> insertGames
     _ <- Server.serve(endpoints)
   } yield ()
 
