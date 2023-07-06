@@ -199,19 +199,19 @@ object MlbApi extends ZIOAppDefault {
             teams <- selectTeams
             teamsJson = teams.toJson
             res = Response.json(
-              s"""{"teams": ${teamsJson.toString}}"""
+              s"""{"teams": ${teamsJson}}"""
             )
           } yield res
 
         case Method.GET -> Root / "team" / teamName =>
           getTeamInformation(teamName).map {
-            case Some(team) => Response.json(s"""{"team": ${team.toJson.toString}}""")
+            case Some(team) => Response.json(s"""{"team": ${team.toJson}}""")
             case None => Response.text(s"No information found for team: $teamName")
           }
 
         case Method.GET -> Root / "score" / teamName =>
           getRating(teamName).map {
-            case Chunk(score) => Response.json(s"""{"${teamName}": ${score.toJson.toString}}""")
+            case Chunk(score) => Response.json(s"""{"${teamName}": ${score.toJson}}""")
             case _ => Response.text(s"No information found for team: $teamName")
           }
 
@@ -220,7 +220,7 @@ object MlbApi extends ZIOAppDefault {
             games <- getGames
             gamesJson = games.toJson
             res = Response.json(
-              s"""{"games": ${gamesJson.toString}}"""
+              s"""{"games": ${gamesJson}}"""
             )
           } yield res
 
@@ -229,7 +229,7 @@ object MlbApi extends ZIOAppDefault {
             games <- getGames(team1, team2)
             gamesJson = games.toJson
             res = Response.json(
-              s"""{"games": ${gamesJson.toString}}"""
+              s"""{"games": ${gamesJson}}"""
             )
           } yield res
         /*  case Method.GET -> Root / "games" => ???
