@@ -4,7 +4,7 @@ import zio._
 import zio.jdbc._
 import zio.http._
 import zio.json.EncoderOps
-import Database.* 
+import Database.*
 
 object Endpoints {
   val endpoints: App[ZConnectionPool] =
@@ -32,7 +32,7 @@ object Endpoints {
           } yield res
 
         case Method.GET -> Root / "games" / team1 / team2 =>
-          for {
+          (for {
             gamesOption: Option[Chunk[MLBData]] <- getGames(team1, team2)
             res: Response = gamesOption match {
               case Some(games) =>
@@ -41,7 +41,37 @@ object Endpoints {
               case None =>
                 Response.text("No games found")
             }
-          } yield res
+          } yield res) catchAll { _ =>
+            ZIO.succeed(Response.text("No games found"))
+          }
+
+        case Method.GET -> Root / "games" / team1 =>
+          (for {
+            teamsOption: Option[Chunk[Team]] <- selectHomeTeamGames(team1)
+            res: Response = teamsOption match {
+              case Some(teams) =>
+                val teamsJson = teams.toJson
+                Response.json(s"""{"teams": ${teamsJson}}""")
+              case None =>
+                Response.text("No games found")
+            }
+          } yield res) catchAll { _ =>
+            ZIO.succeed(Response.text("No games found"))
+          }
+
+        case Method.GET -> Root / "season" / "averages" / team =>
+          (for {
+            seasonAverages <- getSeasonAverages(team)
+            res = seasonAverages match {
+              case averages if averages.nonEmpty =>
+                val averagesJson = averages.toJson
+                Response.json(s"""{"averages": ${averagesJson}}""")
+              case _ =>
+                Response.text("No season averages found")
+            }
+          } yield res) catchAll { _ =>
+            ZIO.succeed(Response.text("No season averages found"))
+          }
       }
       .withDefaultErrorResponse
 }

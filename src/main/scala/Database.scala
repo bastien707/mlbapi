@@ -81,4 +81,28 @@ object Database {
       """.as[MLBData]
     ).map(Option(_))
   }
+
+  def selectHomeTeamGames(
+      team: String
+  ): ZIO[ZConnectionPool, Throwable, Option[Chunk[Team]]] = transaction {
+    selectAll(
+      sql"""
+      SELECT season, team1, team2 FROM games WHERE team1 = $team
+    """.as[Team]
+    ).map(Option(_))
+  }
+
+  def getSeasonAverages(
+      team: String
+  ): ZIO[ZConnectionPool, Throwable, Chunk[SeasonAverage]] =
+    transaction {
+      selectAll(
+        sql"""
+      SELECT season, AVG(score1) AS avg_score, AVG(elo1Pre) AS avg_elo, AVG(rating1Pre) AS avg_rating
+      FROM games
+      WHERE team1 = $team OR team2 = $team
+      GROUP BY season;
+    """.as[SeasonAverage]
+      )
+    }
 }

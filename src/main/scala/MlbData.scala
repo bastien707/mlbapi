@@ -1,7 +1,6 @@
 package mlb
 
 import zio.json.JsonEncoder
-import zio.json.JsonDecoder
 import zio.jdbc.JdbcDecoder
 import zio.json.DeriveJsonDecoder
 import zio.json.DeriveJsonEncoder
@@ -30,12 +29,17 @@ case class MLBData(
     rating1Post: Float,
     rating2Post: Float,
     score1: Int,
-    score2: Int,
+    score2: Int
+)
+
+case class Team (
+  season: String,
+  teamHome: String,
+  teamAway: String,
 )
 
 object MLBData {
   implicit val encoder: JsonEncoder[MLBData] = DeriveJsonEncoder.gen[MLBData]
-  implicit val decoder: JsonDecoder[MLBData] = DeriveJsonDecoder.gen[MLBData]
   implicit val jdbcDecoder: JdbcDecoder[MLBData] = JdbcDecoder { resultSet =>
     val date = resultSet.getString("date")
     val season = resultSet.getString("season")
@@ -85,7 +89,34 @@ object MLBData {
       rating1Post,
       rating2Post,
       score1,
-      score2,
+      score2
     )
+  }
+}
+
+object Team {
+  implicit val encoder: JsonEncoder[Team] = DeriveJsonEncoder.gen[Team]
+  implicit val jdbcDecoder: JdbcDecoder[Team] = JdbcDecoder { resultSet =>
+    val season = resultSet.getString("season") // name of column in database
+    val teamHome = resultSet.getString("team1")
+    val teamAway = resultSet.getString("team2")
+    Team(
+      season,
+      teamHome,
+      teamAway
+    )
+  }
+}
+
+case class SeasonAverage(season: String, avgScore: Float, avgElo: Float, avgRating: Float)
+
+object SeasonAverage {
+  implicit val encoder: JsonEncoder[SeasonAverage] = DeriveJsonEncoder.gen[SeasonAverage]
+  implicit val decoder: JdbcDecoder[SeasonAverage] = JdbcDecoder { resultSet =>
+    val season = resultSet.getString("season")
+    val avgScore = resultSet.getFloat("avg_score")
+    val avgElo = resultSet.getFloat("avg_elo")
+    val avgRating = resultSet.getFloat("avg_rating")
+    SeasonAverage(season, avgScore, avgElo, avgRating)
   }
 }
