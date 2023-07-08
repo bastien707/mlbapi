@@ -15,13 +15,23 @@ case class MLBData(
     elo2Pre: Float,
     eloProb1: Float,
     eloProb2: Float,
+    elo1post: Float,
+    elo2post: Float,
     rating1Pre: Float,
     rating2Pre: Float,
+    pitcher1: String,
+    pitcher2: String,
+    pitcher1rgs: Float,
+    pitcher2rgs: Float,
+    pitcher1adj: Float,
+    pitcher2adj: Float,
     ratingProb1: Float,
-    ratingProb2: Float
+    ratingProb2: Float,
+    rating1Post: Float,
+    rating2Post: Float,
+    score1: Int,
+    score2: Int,
 )
-case class Team(id: Int, name: String, elo: Float, rating: Float)
-case class Score(elo: Float, rating: Float)
 
 object MLBData {
   implicit val encoder: JsonEncoder[MLBData] = DeriveJsonEncoder.gen[MLBData]
@@ -35,10 +45,22 @@ object MLBData {
     val elo2Pre = resultSet.getFloat("elo2Pre")
     val eloProb1 = resultSet.getFloat("eloProb1")
     val eloProb2 = resultSet.getFloat("eloProb2")
+    val elo1post = resultSet.getFloat("elo1post")
+    val elo2post = resultSet.getFloat("elo2post")
     val rating1Pre = resultSet.getFloat("rating1Pre")
     val rating2Pre = resultSet.getFloat("rating2Pre")
+    val pitcher1 = resultSet.getString("pitcher1")
+    val pitcher2 = resultSet.getString("pitcher2")
+    val pitcher1rgs = resultSet.getFloat("pitcher1rgs")
+    val pitcher2rgs = resultSet.getFloat("pitcher2rgs")
+    val pitcher1adj = resultSet.getFloat("pitcher1adj")
+    val pitcher2adj = resultSet.getFloat("pitcher2adj")
     val ratingProb1 = resultSet.getFloat("ratingProb1")
     val ratingProb2 = resultSet.getFloat("ratingProb2")
+    val rating1Post = resultSet.getFloat("rating1Post")
+    val rating2Post = resultSet.getFloat("rating2Post")
+    val score1 = resultSet.getInt("score1")
+    val score2 = resultSet.getInt("score2")
     MLBData(
       date,
       season,
@@ -48,32 +70,22 @@ object MLBData {
       elo2Pre,
       eloProb1,
       eloProb2,
+      elo1post,
+      elo2post,
       rating1Pre,
       rating2Pre,
+      pitcher1,
+      pitcher2,
+      pitcher1rgs,
+      pitcher2rgs,
+      pitcher1adj,
+      pitcher2adj,
       ratingProb1,
-      ratingProb2
+      ratingProb2,
+      rating1Post,
+      rating2Post,
+      score1,
+      score2,
     )
-  }
-}
-
-object Team {
-  implicit val encoder: JsonEncoder[Team] = DeriveJsonEncoder.gen[Team]
-  implicit val decoder: JsonDecoder[Team] = DeriveJsonDecoder.gen[Team]
-  implicit val jdbcDecoder: JdbcDecoder[Team] = JdbcDecoder { resultSet =>
-    val id = resultSet.getInt("id")
-    val name = resultSet.getString("name")
-    val elo = resultSet.getFloat("elo")
-    val rating = resultSet.getFloat("rating")
-    Team(id, name, elo, rating)
-  }
-}
-
-object Score {
-  implicit val encoder: JsonEncoder[Score] = DeriveJsonEncoder.gen[Score]
-  implicit val decoder: JsonDecoder[Score] = DeriveJsonDecoder.gen[Score]
-  implicit val jdbcDecoder: JdbcDecoder[Score] = JdbcDecoder { resultSet =>
-    val elo = resultSet.getFloat("elo")
-    val rating = resultSet.getFloat("rating")
-    Score(elo, rating)
   }
 }
