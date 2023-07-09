@@ -17,7 +17,7 @@ object Endpoints {
             _ <- initializeDatabaseLogic
             res = Response.text("Database initialized successfully")
           } yield res) catchAll { _ =>
-            ZIO.succeed(Response.text("Database initialization failed"))
+            ZIO.succeed(Response.text("Database initialization failed").withStatus(Status.InternalServerError))
           }
 
         case Method.GET -> Root / "games" / "count" =>
@@ -25,9 +25,9 @@ object Endpoints {
             count: Option[String] <- countGames
             res: Response = count match
               case Some(c) => Response.text(s"${c} games")
-              case None    => Response.text("No game in historical data")
+              case None    => Response.text("No game in historical data").withStatus(Status.NoContent)
           } yield res) catchAll { _ =>
-            ZIO.succeed(Response.text("No games found"))
+            ZIO.succeed(Response.text("No games found").withStatus(Status.NotFound))
           }
 
         case Method.GET -> Root / "games" / "latest" =>
@@ -38,10 +38,10 @@ object Endpoints {
                 val gamesJson = games.toJson
                 Response.json(s"""{"games": ${gamesJson}}""")
               case None =>
-                Response.text("No games found")
+                Response.text("No games found").withStatus(Status.NoContent)
             }
           } yield res) catchAll { _ =>
-            ZIO.succeed(Response.text("No games found"))
+            ZIO.succeed(Response.text("No games found").withStatus(Status.NotFound))
           }
 
         case Method.GET -> Root / "games" / team1 / team2 =>
@@ -52,10 +52,10 @@ object Endpoints {
                 val gamesJson = games.toJson
                 Response.json(s"""{"games": ${gamesJson}}""")
               case None =>
-                Response.text("No games found")
+                Response.text("No games found").withStatus(Status.NoContent)
             }
           } yield res) catchAll { _ =>
-            ZIO.succeed(Response.text("No games found"))
+            ZIO.succeed(Response.text("No games found").withStatus(Status.NotFound))
           }
 
         case Method.GET -> Root / "games" / team1 =>
@@ -66,10 +66,10 @@ object Endpoints {
                 val teamsJson = teams.toJson
                 Response.json(s"""{"teams": ${teamsJson}}""")
               case None =>
-                Response.text("No games found")
+                Response.text("No games found").withStatus(Status.NoContent)
             }
           } yield res) catchAll { _ =>
-            ZIO.succeed(Response.text("No games found"))
+            ZIO.succeed(Response.text("No games found").withStatus(Status.NotFound))
           }
 
         case Method.GET -> Root / "season" / "averages" / team =>
@@ -83,7 +83,7 @@ object Endpoints {
                 Response.text("No season averages found")
             }
           } yield res) catchAll { _ =>
-            ZIO.succeed(Response.text("No season averages found"))
+            ZIO.succeed(Response.text("No season averages found").withStatus(Status.NotFound))
           }
       }
       .withDefaultErrorResponse
