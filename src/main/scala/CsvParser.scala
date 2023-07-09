@@ -45,18 +45,15 @@ object CsvParser {
     mlbDataList
   }
 
-  def parseFloat(value: String): Float = {
-    if (value.isEmpty) 0.0f
-    else value.toFloat
-  }
+  def parseFloat(value: String): Option[Float] =
+    Option(value).flatMap(str => Option(str).filter(_.nonEmpty).map(_.toFloat))
 
-  def parseInt(value: String): Int = {
-    if (value.isEmpty) 0
-    else value.toInt
-  }
+  def parseInt(value: String): Option[Int] =
+    Option(value).flatMap(str => Option(str).filter(_.nonEmpty).map(_.toInt))
 
   def parseString(value: String): String = {
-    if (value.isEmpty) "undefined"
-    else value
+    Option(value)
+      .filter(_.nonEmpty)
+      .getOrElse("undefined")
   }
 }

@@ -14,22 +14,22 @@ case class MLBData(
     elo2Pre: Float,
     eloProb1: Float,
     eloProb2: Float,
-    elo1post: Float,
-    elo2post: Float,
+    elo1post: Option[Float],
+    elo2post: Option[Float],
     rating1Pre: Float,
     rating2Pre: Float,
     pitcher1: String,
     pitcher2: String,
-    pitcher1rgs: Float,
-    pitcher2rgs: Float,
-    pitcher1adj: Float,
-    pitcher2adj: Float,
+    pitcher1rgs: Option[Float],
+    pitcher2rgs: Option[Float],
+    pitcher1adj: Option[Float],
+    pitcher2adj: Option[Float],
     ratingProb1: Float,
     ratingProb2: Float,
-    rating1Post: Float,
-    rating2Post: Float,
-    score1: Int,
-    score2: Int
+    rating1Post: Option[Float],
+    rating2Post: Option[Float],
+    score1: Option[Int],
+    score2: Option[Int],
 )
 
 case class Team (
@@ -49,22 +49,22 @@ object MLBData {
     val elo2Pre = resultSet.getFloat("elo2Pre")
     val eloProb1 = resultSet.getFloat("eloProb1")
     val eloProb2 = resultSet.getFloat("eloProb2")
-    val elo1post = resultSet.getFloat("elo1post")
-    val elo2post = resultSet.getFloat("elo2post")
+    val elo1post = Option(resultSet.getFloat("elo1post"))
+    val elo2post = Option(resultSet.getFloat("elo2post"))
     val rating1Pre = resultSet.getFloat("rating1Pre")
     val rating2Pre = resultSet.getFloat("rating2Pre")
     val pitcher1 = resultSet.getString("pitcher1")
     val pitcher2 = resultSet.getString("pitcher2")
-    val pitcher1rgs = resultSet.getFloat("pitcher1rgs")
-    val pitcher2rgs = resultSet.getFloat("pitcher2rgs")
-    val pitcher1adj = resultSet.getFloat("pitcher1adj")
-    val pitcher2adj = resultSet.getFloat("pitcher2adj")
+    val pitcher1rgs = Option(resultSet.getFloat("pitcher1rgs"))
+    val pitcher2rgs = Option(resultSet.getFloat("pitcher2rgs"))
+    val pitcher1adj = Option(resultSet.getFloat("pitcher1adj"))
+    val pitcher2adj = Option(resultSet.getFloat("pitcher2adj"))
     val ratingProb1 = resultSet.getFloat("ratingProb1")
     val ratingProb2 = resultSet.getFloat("ratingProb2")
-    val rating1Post = resultSet.getFloat("rating1Post")
-    val rating2Post = resultSet.getFloat("rating2Post")
-    val score1 = resultSet.getInt("score1")
-    val score2 = resultSet.getInt("score2")
+    val rating1Post = Option(resultSet.getFloat("rating1Post"))
+    val rating2Post = Option(resultSet.getFloat("rating2Post"))
+    val score1 = Option(resultSet.getInt("score1"))
+    val score2 = Option(resultSet.getInt("score2"))
     MLBData(
       date,
       season,
