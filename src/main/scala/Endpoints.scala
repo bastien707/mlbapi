@@ -11,16 +11,27 @@ object Endpoints {
     Http
       .collectZIO[Request] {
 
+        case Method.GET -> Root / "init" =>
+          (for {
+            _ <- dropTables
+            _ <- initializeDatabaseLogic
+            res = Response.text("Database initialized successfully")
+          } yield res) catchAll { _ =>
+            ZIO.succeed(Response.text("Database initialization failed"))
+          }
+
         case Method.GET -> Root / "games" / "count" =>
-          for {
+          (for {
             count: Option[String] <- countGames
             res: Response = count match
               case Some(c) => Response.text(s"${c} games")
               case None    => Response.text("No game in historical data")
-          } yield res
+          } yield res) catchAll { _ =>
+            ZIO.succeed(Response.text("No games found"))
+          }
 
         case Method.GET -> Root / "games" / "latest" =>
-          for {
+          (for {
             gamesOption: Option[Chunk[MLBData]] <- getGames
             res: Response = gamesOption match {
               case Some(games) =>
@@ -29,7 +40,9 @@ object Endpoints {
               case None =>
                 Response.text("No games found")
             }
-          } yield res
+          } yield res) catchAll { _ =>
+            ZIO.succeed(Response.text("No games found"))
+          }
 
         case Method.GET -> Root / "games" / team1 / team2 =>
           (for {

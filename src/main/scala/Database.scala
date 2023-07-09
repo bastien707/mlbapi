@@ -11,7 +11,7 @@ object Database {
   val create: ZIO[ZConnectionPool, Throwable, Unit] = transaction {
     execute(
       sql"""
-        CREATE TABLE GAMES (
+        CREATE TABLE IF NOT EXISTS games(
           id SERIAL PRIMARY KEY,
           date VARCHAR(255),
           season VARCHAR(255),
@@ -40,6 +40,16 @@ object Database {
         );
       """
     )
+  }
+
+  val initializeDatabaseLogic: ZIO[ZConnectionPool, Throwable, Unit] =
+    for {
+      _ <- create
+      _ <- insertGames
+    } yield ()
+
+  val dropTables: ZIO[ZConnectionPool, Throwable, Unit] = transaction {
+    execute(sql"""DROP TABLE IF EXISTS games;""")
   }
 
   val insertGames: ZIO[ZConnectionPool, Throwable, UpdateResult] = transaction {
