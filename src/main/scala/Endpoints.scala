@@ -32,16 +32,15 @@ object Endpoints {
         
         case Method.GET -> Root / "games" / "new" => 
           (for {
-            teams <- selectGames
-            res = teams match {
-              case teams if teams.nonEmpty =>
-                val teamsJson = teams.toJson
-                Response.json(s"""{"teams": ${teamsJson}}""")
-              case _ =>
-                Response.text("No teams found")
+            games <- selectGames
+            res = games match {
+              case Some(value) => 
+                val json = value.toJson
+                Response.json("""{"games": """ + json + """}""")
+              case None => Response.text("No games found").withStatus(Status.NoContent)
             }
           } yield res) catchAll { _ =>
-            ZIO.succeed(Response.text("No teams found").withStatus(Status.NotFound))
+            ZIO.succeed(Response.text("No games found").withStatus(Status.NotFound))
           }
       }
       .withDefaultErrorResponse

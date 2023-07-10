@@ -3,12 +3,20 @@ package mlb
 
 import zio._
 import zio.jdbc._
+import zio.http._
+import mlb.Endpoints.endpoints
+import mlb.Database.*
+import Constants.*
+import com.github.tototoshi.csv._
+import zio.stream.ZStream
+import mlb.GameDates.GameDate
+import java.time.LocalDate
+import mlb.SeasonYears.SeasonYear
+import mlb.HomeTeams.HomeTeam
+import mlb.AwayTeams.AwayTeam
+import mlb.PlayoffRounds.PlayoffRound
 
 object Database {
-
-  val gamesCsv = CsvParser.parseGame()
-  print(gamesCsv)
-  print("#############", games)
 
   val create: ZIO[ZConnectionPool, Throwable, Unit] = transaction {
     execute(
@@ -24,18 +32,27 @@ object Database {
     """
     )
   }
-  val initializeDatabaseLogic: ZIO[ZConnectionPool, Throwable, Unit] =
-    for {
-      _ <- create
-      _ <- insertRows
-    } yield ()
+  val initializeDatabaseLogic: ZIO[ZConnectionPool, Throwable, Unit] = for {
+    _ <- create
+    source: CSVReader <- ZIO.succeed(
+      CSVReader.open(new java.io.File(LatestElo))
+    )
+    stream: Unit <- ZStream
+      .fromIterator[Map[String, String]](source.iteratorWithHeaders)
+      .map[Game](CsvParser.parseGame)
+      .grouped(1000)
+      .foreach(chunk => insertRows(chunk.toList))
+    _ <- ZIO.succeed(source.close())
+  } yield ()
 
   val dropTables: ZIO[ZConnectionPool, Throwable, Unit] = transaction {
     execute(sql"""DROP TABLE IF EXISTS games;""")
   }
 
-  val insertRows: ZIO[ZConnectionPool, Throwable, UpdateResult] = {
-    val rows: List[Game.Row] = gamesCsv.map(_.toRow)
+  def insertRows(
+      games: List[Game]
+  ): ZIO[ZConnectionPool, Throwable, UpdateResult] = {
+    val rows: List[Game.Row] = games.map(_.toRow)
     transaction {
       insert(
         sql"INSERT INTO games(date, season_year, playoff_round, home_team, away_team)"
