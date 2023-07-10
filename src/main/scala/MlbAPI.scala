@@ -24,7 +24,7 @@ object MlbApi extends ZIOAppDefault {
     )
 
   val app: ZIO[ZConnectionPool & Server, Throwable, Unit] = for {
-    conn <- create *> insertGames
+    conn <- create *>  insertRows
     _ <- Server.serve(endpoints)
   } yield ()
 

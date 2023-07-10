@@ -29,61 +29,19 @@ object Endpoints {
           } yield res) catchAll { _ =>
             ZIO.succeed(Response.text("No games found").withStatus(Status.NotFound))
           }
-
-        case Method.GET -> Root / "games" / "latest" =>
+        
+        case Method.GET -> Root / "games" / "new" => 
           (for {
-            gamesOption: Option[Chunk[MLBData]] <- getGames
-            res: Response = gamesOption match {
-              case Some(games) =>
-                val gamesJson = games.toJson
-                Response.json(s"""{"games": ${gamesJson}}""")
-              case None =>
-                Response.text("No games found").withStatus(Status.NoContent)
-            }
-          } yield res) catchAll { _ =>
-            ZIO.succeed(Response.text("No games found").withStatus(Status.NotFound))
-          }
-
-        case Method.GET -> Root / "games" / team1 / team2 =>
-          (for {
-            gamesOption: Option[Chunk[MLBData]] <- getGames(team1, team2)
-            res: Response = gamesOption match {
-              case Some(games) =>
-                val gamesJson = games.toJson
-                Response.json(s"""{"games": ${gamesJson}}""")
-              case None =>
-                Response.text("No games found").withStatus(Status.NoContent)
-            }
-          } yield res) catchAll { _ =>
-            ZIO.succeed(Response.text("No games found").withStatus(Status.NotFound))
-          }
-
-        case Method.GET -> Root / "games" / team1 =>
-          (for {
-            teamsOption: Option[Chunk[Team]] <- selectHomeTeamGames(team1)
-            res: Response = teamsOption match {
-              case Some(teams) =>
+            teams <- selectGames
+            res = teams match {
+              case teams if teams.nonEmpty =>
                 val teamsJson = teams.toJson
                 Response.json(s"""{"teams": ${teamsJson}}""")
-              case None =>
-                Response.text("No games found").withStatus(Status.NoContent)
-            }
-          } yield res) catchAll { _ =>
-            ZIO.succeed(Response.text("No games found").withStatus(Status.NotFound))
-          }
-
-        case Method.GET -> Root / "season" / "averages" / team =>
-          (for {
-            seasonAverages <- getSeasonAverages(team)
-            res = seasonAverages match {
-              case averages if averages.nonEmpty =>
-                val averagesJson = averages.toJson
-                Response.json(s"""{"averages": ${averagesJson}}""")
               case _ =>
-                Response.text("No season averages found")
+                Response.text("No teams found")
             }
           } yield res) catchAll { _ =>
-            ZIO.succeed(Response.text("No season averages found").withStatus(Status.NotFound))
+            ZIO.succeed(Response.text("No teams found").withStatus(Status.NotFound))
           }
       }
       .withDefaultErrorResponse
