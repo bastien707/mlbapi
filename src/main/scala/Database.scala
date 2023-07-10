@@ -14,7 +14,6 @@ import java.time.LocalDate
 import mlb.SeasonYears.SeasonYear
 import mlb.HomeTeams.HomeTeam
 import mlb.AwayTeams.AwayTeam
-import mlb.PlayoffRounds.PlayoffRound
 
 object Database {
 
@@ -25,9 +24,12 @@ object Database {
         id SERIAL PRIMARY KEY,
         date VARCHAR(255),
         season_year INT,
-        playoff_round INT,
         home_team VARCHAR(255),
-        away_team VARCHAR(255)
+        away_team VARCHAR(255),
+        elo1_pre FLOAT,
+        elo2_pre FLOAT,
+        elo_prob1 FLOAT,
+        elo_prob2 FLOAT
       );
     """
     )
@@ -35,7 +37,7 @@ object Database {
   val initializeDatabaseLogic: ZIO[ZConnectionPool, Throwable, Unit] = for {
     _ <- create
     source: CSVReader <- ZIO.succeed(
-      CSVReader.open(new java.io.File(LatestElo))
+      CSVReader.open(new java.io.File(Elop1))
     )
     stream: Unit <- ZStream
       .fromIterator[Map[String, String]](source.iteratorWithHeaders)
@@ -55,7 +57,7 @@ object Database {
     val rows: List[Game.Row] = games.map(_.toRow)
     transaction {
       insert(
-        sql"INSERT INTO games(date, season_year, playoff_round, home_team, away_team)"
+        sql"INSERT INTO games(date, season_year, home_team, away_team, elo1_pre, elo2_pre, elo_prob1, elo_prob2)"
           .values[Game.Row](rows)
       )
     }
@@ -71,7 +73,7 @@ object Database {
   val selectGames: ZIO[ZConnectionPool, Throwable, Option[Chunk[Game]]] =
     transaction {
       selectAll(
-        sql"SELECT date, season_year, playoff_round, home_team, away_team FROM games LIMIT 5"
+        sql"SELECT date, season_year, home_team, away_team, elo1_pre, elo2_pre, elo_prob1, elo_prob2 FROM games LIMIT 5;"
           .as[Game]
       ).map(Option(_))
     }

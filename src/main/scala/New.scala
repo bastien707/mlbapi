@@ -73,37 +73,84 @@ object SeasonYears {
   implicit val seasonYearDecoder: JsonDecoder[SeasonYear] = JsonDecoder.int
 }
 
-object PlayoffRounds {
+// For elos and ratings probabilities
+object Probs {
 
-  opaque type PlayoffRound <: Int = Int
+  opaque type Prob = Float
 
-  object PlayoffRound {
+  object Prob {
 
-    def apply(round: Int): PlayoffRound = round
+    def apply(value: Float): Prob = value
 
-    def safe(value: Int): Option[PlayoffRound] =
-      Option.when(value >= 1 && value <= 4)(value)
+    def safe(value: Float): Option[Prob] =
+      Option.when(value >= 0 && value <= 1)(value)
 
-    def unapply(playoffRound: PlayoffRound): Int = playoffRound
+    def unapply(prob: Prob): Float = prob
   }
 
-  given CanEqual[PlayoffRound, PlayoffRound] = CanEqual.derived
-  implicit val playoffRoundEncoder: JsonEncoder[PlayoffRound] = JsonEncoder.int
-  implicit val playoffRoundDEncoder: JsonDecoder[PlayoffRound] = JsonDecoder.int
+  given CanEqual[Prob, Prob] = CanEqual.derived
+  implicit val probEncoder: JsonEncoder[Prob] = JsonEncoder.float
+  implicit val probDecoder: JsonDecoder[Prob] = JsonDecoder.float
+}
+
+// For elos and ratings
+object Ratings {
+
+  opaque type Rating = Float
+
+  object Rating {
+
+    def apply(value: Float): Rating = value
+
+    def safe(value: Float): Option[Rating] =
+      Option.when(value >= 0)(value)
+
+    def unapply(rating: Rating): Float = rating
+  }
+
+  given CanEqual[Rating, Rating] = CanEqual.derived
+  implicit val ratingEncoder: JsonEncoder[Rating] = JsonEncoder.float
+  implicit val ratingDecoder: JsonDecoder[Rating] = JsonDecoder.float
+}
+
+object Scores {
+
+  opaque type Score = Int
+
+  object Score {
+
+    def apply(value: Int): Score = value
+
+    def safe(value: Int): Option[Score] =
+      Option.when(value >= 0)(value)
+
+    def unapply(score: Score): Int = score
+  }
+
+  given CanEqual[Score, Score] = CanEqual.derived
+  implicit val scoreEncoder: JsonEncoder[Score] = JsonEncoder.int
+  implicit val scoreDecoder: JsonDecoder[Score] = JsonDecoder.int
+
 }
 
 import GameDates.*
-import PlayoffRounds.*
 import SeasonYears.*
 import HomeTeams.*
 import AwayTeams.*
+import Probs.*
+import Ratings.*
+import Scores.*
+
 
 final case class Game(
     date: GameDate,
     season: SeasonYear,
-    playoffRound: Option[PlayoffRound],
     homeTeam: HomeTeam,
-    awayTeam: AwayTeam
+    awayTeam: AwayTeam,
+    elo1_pre: Option[Rating],
+    elo2_pre: Option[Rating],
+    elo_prob1: Option[Prob],
+    elo_prob2: Option[Prob]
 )
 
 object Game {
@@ -112,31 +159,49 @@ object Game {
   implicit val gameEncoder: JsonEncoder[Game] = DeriveJsonEncoder.gen[Game]
   implicit val gameDecoder: JsonDecoder[Game] = DeriveJsonDecoder.gen[Game]
 
-  def unapply(game: Game): (GameDate, SeasonYear, Option[PlayoffRound], HomeTeam, AwayTeam) =
-    (game.date, game.season, game.playoffRound, game.homeTeam, game.awayTeam)
+  def unapply(
+      game: Game
+  ): (GameDate, SeasonYear, HomeTeam, AwayTeam, Option[Rating], Option[Rating], Option[Prob], Option[Prob]) =
+    (
+      game.date,
+      game.season,
+      game.homeTeam,
+      game.awayTeam,
+      game.elo1_pre,
+      game.elo2_pre,
+      game.elo_prob1,
+      game.elo_prob2
+    )
 
   // a custom decoder from a tuple
-  type Row = (String, Int, Option[Int], String, String)
+  type Row = (String, Int, String, String, Option[Float], Option[Float], Option[Float], Option[Float])
 
-  extension (g:Game)
+  extension (g: Game)
     def toRow: Row =
-      val (d, y, p, h, a) = Game.unapply(g)
+      val (d, y, h, a, e1p, e2p, ep1, ep2) = Game.unapply(g)
       (
         GameDate.unapply(d).toString,
         SeasonYear.unapply(y),
-        p.map(PlayoffRound.unapply),
         HomeTeam.unapply(h),
-        AwayTeam.unapply(a)
+        AwayTeam.unapply(a),
+        e1p.map(Rating.unapply),
+        e2p.map(Rating.unapply),
+        ep1.map(Prob.unapply),
+        ep2.map(Prob.unapply)
       )
 
-  implicit val jdbcDecoder: JdbcDecoder[Game] = JdbcDecoder[Row]().map[Game] { t =>
-      val (date, season, maybePlayoff, home, away) = t
+  implicit val jdbcDecoder: JdbcDecoder[Game] = JdbcDecoder[Row]().map[Game] {
+    t =>
+      val (date, season, home, away, elo1_pre, elo2_pre, elo_prob1, elo_prob2) = t
       Game(
         GameDate(LocalDate.parse(date)),
         SeasonYear(season),
-        maybePlayoff.map(PlayoffRound(_)),
         HomeTeam(home),
-        AwayTeam(away)
+        AwayTeam(away),
+        elo1_pre.map(Rating(_)),
+        elo2_pre.map(Rating(_)),
+        elo_prob1.map(Prob(_)),
+        elo_prob2.map(Prob(_))
       )
-    }
+  }
 }

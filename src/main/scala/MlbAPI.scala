@@ -9,11 +9,6 @@ import Constants.*
 import com.github.tototoshi.csv._
 import zio.stream.ZStream
 import java.time.LocalDate
-import mlb.GameDates.GameDate
-import mlb.SeasonYears.SeasonYear
-import mlb.HomeTeams.HomeTeam
-import mlb.AwayTeams.AwayTeam
-import mlb.PlayoffRounds.PlayoffRound
 
 object MlbApi extends ZIOAppDefault {
 
@@ -35,17 +30,16 @@ object MlbApi extends ZIOAppDefault {
   val app: ZIO[ZConnectionPool & Server, Throwable, Unit] = for {
     conn: Unit <- create
     source: CSVReader <- ZIO.succeed(
-      CSVReader.open(new java.io.File(LatestElo))
+      CSVReader.open(new java.io.File(Elop1))
     )
     stream: Unit <- ZStream
       .fromIterator[Map[String, String]](source.iteratorWithHeaders)
       .map[Game](CsvParser.parseGame)
-      .grouped(100)
+      .grouped(1000)
       .foreach(chunk => insertRows(chunk.toList))
     _ <- ZIO.succeed(source.close())
     _ <- Server.serve(endpoints)
   } yield ()
-
   override def run: ZIO[Any, Throwable, Unit] =
     app.provide(createZIOPoolConfig >>> connectionPool, Server.default)
 }

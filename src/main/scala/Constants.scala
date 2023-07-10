@@ -1,6 +1,15 @@
 package mlb
 
 object Constants {
-  val Elo: String = "/Users/bastien/Dev/EFREI/M1/S8/functionalProgramming/mlb-elo/mlb_elo.csv"
-  val LatestElo: String = "/Users/bastien/Dev/EFREI/M1/S8/functionalProgramming/mlb-elo/mlb_elo_latest.csv"
+  val Elop1: String = "/Users/bastien/Dev/EFREI/M1/S8/functionalProgramming/mlb-elo/mlb_elo.csv"
+  val LatestElop1: String = "/Users/bastien/Dev/EFREI/M1/S8/functionalProgramming/mlb-elo/mlb_elo_latest.csv"
+
+  val Elop2: String = ""
+  val LatestElop2: String = ""
+
+  val Elop3: String = ""
+  val LatestElop3: String = ""
+
+  val Elop4: String = ""
+  val LatestElop4: String = ""
 }
