@@ -109,7 +109,7 @@ object Database {
 
   def getLastMatch(
       team1: HomeTeam,
-      team2: AwayTeam,
+      team2: AwayTeam
   ): ZIO[ZConnectionPool, Throwable, Option[Game]] = transaction {
     selectOne(
       sql"SELECT * FROM games WHERE (home_team = ${HomeTeam
@@ -120,7 +120,7 @@ object Database {
   }
 
   def getTopTen(
-    season:SeasonYear
+      season: SeasonYear
   ): ZIO[ZConnectionPool, Throwable, Option[Chunk[Ranking]]] = transaction {
     selectAll(
       sql"""SELECT position, team_name, max_elo, season
@@ -145,9 +145,11 @@ object Database {
     ).map(Option(_))
   }
 
-  def getMatchHistoric(): ZIO[ZConnectionPool, Throwable, Option[Chunk[(Int, String, Int, Int, Int)]]] = transaction {
-    selectAll(
-      sql"""
+  def getMatchHistoric()
+      : ZIO[ZConnectionPool, Throwable, Option[Chunk[Historics]]] =
+    transaction {
+      selectAll(
+        sql"""
         SELECT
             season,
             team,
@@ -161,8 +163,8 @@ object Database {
         GROUP BY
             season,
             team;
-      """.as[(Int, String, Int, Int, Int)]
-    ).map(Option(_))
-  }
+      """.as[Historics]
+      ).map(Option(_))
+    }
 
 }
