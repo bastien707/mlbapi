@@ -78,6 +78,19 @@ object Endpoints {
           } yield res) catchAll { _ =>
             ZIO.succeed(Response.text("No games found").withStatus(Status.NotFound))
         }
+
+        case Method.GET -> Root / "ranking" / season  =>
+          (for {
+            games <- getTopTen(SeasonYear(season.toInt))
+            res = games match {
+              case Some(value) => 
+                val json = value.toJson
+                Response.json("""{"Ranking": """ + json + """}""")
+              case None => Response.text("No games found").withStatus(Status.NoContent)
+            }
+          } yield res) catchAll { _ =>
+            ZIO.succeed(Response.text("No games found").withStatus(Status.NotFound))
+        }
       }
       .withDefaultErrorResponse
 }

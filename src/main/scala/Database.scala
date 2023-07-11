@@ -109,4 +109,27 @@ object Database {
         .as[Game]
     )
   }
+
+  def getTopTen(
+    season:SeasonYear
+  ): ZIO[ZConnectionPool, Throwable, Option[Chunk[(String, String, Float)]]] = transaction {
+    selectAll(
+      sql"""SELECT season, team_name, MAX(elo) AS max_elo
+      FROM (
+        SELECT season, home_team AS team_name, MAX(elo1_pre) AS elo
+        FROM games
+        WHERE season = ${SeasonYear.unapply(season)}
+        GROUP BY season, home_team
+        UNION ALL
+        SELECT season, away_team AS team_name, MAX(elo2_pre) AS elo
+        FROM games
+        WHERE season = ${SeasonYear.unapply(season)}
+        GROUP BY season, away_team
+      ) AS top_teams
+      GROUP BY season, team_name
+      ORDER BY max_elo DESC
+      LIMIT 10;
+      """.as[(String, String, Float)]
+    ).map(Option(_))
+  }
 }
