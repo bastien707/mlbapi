@@ -147,21 +147,32 @@ final case class Game(
     season: SeasonYear,
     homeTeam: HomeTeam,
     awayTeam: AwayTeam,
-    elo1_pre: Option[Rating],
-    elo2_pre: Option[Rating],
-    elo_prob1: Option[Prob],
-    elo_prob2: Option[Prob]
+    elo1_pre: Option[Rating], //not option 
+    elo2_pre: Option[Rating], //no option 
+    elo_prob1: Option[Prob], //not option 
+    elo_prob2: Option[Prob], //not option
+    elo1_post: Option[Rating],
+    elo2_post: Option[Rating],
+    rating1_pre: Rating,
+    rating2_pre: Rating,
+    rating_prob1: Prob,
+    rating_prob2: Prob,
+    rating1_post: Option[Rating],
+    rating2_post: Option[Rating],
+    score1: Option[Score],
+    score2: Option[Score]
 )
 
 object Game {
 
   given CanEqual[Game, Game] = CanEqual.derived
+  implicit val codec: JsonCodec[Game] = DeriveJsonCodec.gen[Game]
   implicit val gameEncoder: JsonEncoder[Game] = DeriveJsonEncoder.gen[Game]
   implicit val gameDecoder: JsonDecoder[Game] = DeriveJsonDecoder.gen[Game]
 
   def unapply(
       game: Game
-  ): (GameDate, SeasonYear, HomeTeam, AwayTeam, Option[Rating], Option[Rating], Option[Prob], Option[Prob]) =
+  ): (GameDate, SeasonYear, HomeTeam, AwayTeam, Option[Rating], Option[Rating], Option[Prob], Option[Prob], Option[Rating], Option[Rating], Rating, Rating, Prob, Prob, Option[Rating], Option[Rating], Option[Score], Option[Score]) =
     (
       game.date,
       game.season,
@@ -170,15 +181,25 @@ object Game {
       game.elo1_pre,
       game.elo2_pre,
       game.elo_prob1,
-      game.elo_prob2
+      game.elo_prob2,
+      game.elo1_post,
+      game.elo2_post,
+      game.rating1_pre,
+      game.rating2_pre,
+      game.rating_prob1,
+      game.rating_prob2,
+      game.rating1_post,
+      game.rating2_post,
+      game.score1,
+      game.score2
     )
 
   // a custom decoder from a tuple
-  type Row = (String, Int, String, String, Option[Float], Option[Float], Option[Float], Option[Float])
+  type Row = (String, Int, String, String, Option[Float], Option[Float], Option[Float], Option[Float], Option[Float], Option[Float], Float, Float, Float, Float, Option[Float], Option[Float], Option[Int], Option[Int])
 
   extension (g: Game)
     def toRow: Row =
-      val (d, y, h, a, e1p, e2p, ep1, ep2) = Game.unapply(g)
+      val (d, y, h, a, e1p, e2p, ep1, ep2, e1post, e2post, r1p, r2p, rp1, rp2, r1post, r2post, s1, s2) = Game.unapply(g)
       (
         GameDate.unapply(d).toString,
         SeasonYear.unapply(y),
@@ -187,12 +208,22 @@ object Game {
         e1p.map(Rating.unapply),
         e2p.map(Rating.unapply),
         ep1.map(Prob.unapply),
-        ep2.map(Prob.unapply)
+        ep2.map(Prob.unapply),
+        e1post.map(Rating.unapply),
+        e2post.map(Rating.unapply),
+        Rating.unapply(r1p),
+        Rating.unapply(r2p),
+        Prob.unapply(rp1),
+        Prob.unapply(rp2),
+        r1post.map(Rating.unapply),
+        r2post.map(Rating.unapply),
+        s1.map(Score.unapply),
+        s2.map(Score.unapply)
       )
 
   implicit val jdbcDecoder: JdbcDecoder[Game] = JdbcDecoder[Row]().map[Game] {
     t =>
-      val (date, season, home, away, elo1_pre, elo2_pre, elo_prob1, elo_prob2) = t
+      val (date, season, home, away, elo1_pre, elo2_pre, elo_prob1, elo_prob2, elo1_post, elo2_post, rating1_pre, rating2_pre, rating_prob1, rating_prob2, rating1_post, rating2_post, score1, score2) = t
       Game(
         GameDate(LocalDate.parse(date)),
         SeasonYear(season),
@@ -201,7 +232,17 @@ object Game {
         elo1_pre.map(Rating(_)),
         elo2_pre.map(Rating(_)),
         elo_prob1.map(Prob(_)),
-        elo_prob2.map(Prob(_))
+        elo_prob2.map(Prob(_)),
+        elo1_post.map(Rating(_)),
+        elo2_post.map(Rating(_)),
+        Rating(rating1_pre),
+        Rating(rating2_pre),
+        Prob(rating_prob1),
+        Prob(rating_prob2),
+        rating1_post.map(Rating(_)),
+        rating2_post.map(Rating(_)),
+        score1.map(Score(_)),
+        score2.map(Score(_))
       )
   }
 }

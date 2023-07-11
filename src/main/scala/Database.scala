@@ -21,15 +21,24 @@ object Database {
     execute(
       sql"""
       CREATE TABLE IF NOT EXISTS games(
-        id SERIAL PRIMARY KEY,
         date VARCHAR(255),
-        season_year INT,
+        season INT,
         home_team VARCHAR(255),
         away_team VARCHAR(255),
         elo1_pre FLOAT,
         elo2_pre FLOAT,
         elo_prob1 FLOAT,
-        elo_prob2 FLOAT
+        elo_prob2 FLOAT,
+        elo1_post FLOAT,
+        elo2_post FLOAT,
+        rating1_pre FLOAT,
+        rating2_pre FLOAT,
+        rating_prob1 FLOAT,
+        rating_prob2 FLOAT,
+        rating1_post FLOAT,
+        rating2_post FLOAT,
+        score1 INT,
+        score2 INT
       );
     """
     )
@@ -57,7 +66,7 @@ object Database {
     val rows: List[Game.Row] = games.map(_.toRow)
     transaction {
       insert(
-        sql"INSERT INTO games(date, season_year, home_team, away_team, elo1_pre, elo2_pre, elo_prob1, elo_prob2)"
+        sql"INSERT INTO games(date, season, home_team, away_team, elo1_pre, elo2_pre, elo_prob1, elo_prob2, elo1_post, elo2_post, rating1_pre, rating2_pre, rating_prob1, rating_prob2, rating1_post, rating2_post, score1, score2)"
           .values[Game.Row](rows)
       )
     }
@@ -73,8 +82,7 @@ object Database {
   val selectGames: ZIO[ZConnectionPool, Throwable, Option[Chunk[Game]]] =
     transaction {
       selectAll(
-        sql"SELECT date, season_year, home_team, away_team, elo1_pre, elo2_pre, elo_prob1, elo_prob2 FROM games LIMIT 5;"
-          .as[Game]
+        sql"SELECT * FROM games WHERE season = 2021".as[Game]
       ).map(Option(_))
     }
 }
