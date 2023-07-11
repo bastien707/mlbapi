@@ -121,7 +121,7 @@ object Database {
 
   def getTopTen(
     season:SeasonYear
-  ): ZIO[ZConnectionPool, Throwable, Option[Chunk[(Int, String, Float, Int)]]] = transaction {
+  ): ZIO[ZConnectionPool, Throwable, Option[Chunk[Ranking]]] = transaction {
     selectAll(
       sql"""SELECT position, team_name, max_elo, season
             FROM (
@@ -141,7 +141,7 @@ object Database {
             ) AS ranked_teams
             WHERE position <= 10
             ORDER BY season, position;
-      """.as[(Int, String, Float, Int)]
+      """.as[Ranking]
     ).map(Option(_))
   }
 }
