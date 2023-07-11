@@ -79,10 +79,22 @@ object Database {
       )
     }
 
-  val selectGames: ZIO[ZConnectionPool, Throwable, Option[Chunk[Game]]] =
+  def selectGames(season: SeasonYear): ZIO[ZConnectionPool, Throwable, Option[Chunk[Game]]] =
     transaction {
       selectAll(
-        sql"SELECT * FROM games WHERE season = 2021".as[Game]
+        sql"SELECT * FROM games WHERE season = ${SeasonYear.unapply(season)}".as[Game]
       ).map(Option(_))
     }
+
+  def getVictoriesNumber(
+      team1: HomeTeam,
+      team2: AwayTeam
+  ): ZIO[ZConnectionPool, Throwable, Option[String]] = transaction {
+    selectOne(
+      sql"SELECT COUNT(*) FROM games WHERE (home_team = ${HomeTeam
+          .unapply(team1)} AND away_team = ${AwayTeam.unapply(team2)} AND score1 > score2) OR (home_team = ${AwayTeam
+          .unapply(team2)} AND away_team = ${HomeTeam.unapply(team1)} AND score2 > score1)"
+        .as[String]
+    )
+  }
 }

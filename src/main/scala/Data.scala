@@ -147,10 +147,10 @@ final case class Game(
     season: SeasonYear,
     homeTeam: HomeTeam,
     awayTeam: AwayTeam,
-    elo1_pre: Option[Rating], //not option 
-    elo2_pre: Option[Rating], //no option 
-    elo_prob1: Option[Prob], //not option 
-    elo_prob2: Option[Prob], //not option
+    elo1_pre: Rating, 
+    elo2_pre: Rating, 
+    elo_prob1: Prob,
+    elo_prob2: Prob, 
     elo1_post: Option[Rating],
     elo2_post: Option[Rating],
     rating1_pre: Rating,
@@ -172,7 +172,7 @@ object Game {
 
   def unapply(
       game: Game
-  ): (GameDate, SeasonYear, HomeTeam, AwayTeam, Option[Rating], Option[Rating], Option[Prob], Option[Prob], Option[Rating], Option[Rating], Rating, Rating, Prob, Prob, Option[Rating], Option[Rating], Option[Score], Option[Score]) =
+  ): (GameDate, SeasonYear, HomeTeam, AwayTeam, Rating, Rating, Prob, Prob, Option[Rating], Option[Rating], Rating, Rating, Prob, Prob, Option[Rating], Option[Rating], Option[Score], Option[Score]) =
     (
       game.date,
       game.season,
@@ -195,7 +195,7 @@ object Game {
     )
 
   // a custom decoder from a tuple
-  type Row = (String, Int, String, String, Option[Float], Option[Float], Option[Float], Option[Float], Option[Float], Option[Float], Float, Float, Float, Float, Option[Float], Option[Float], Option[Int], Option[Int])
+  type Row = (String, Int, String, String, Float, Float, Float, Float, Option[Float], Option[Float], Float, Float, Float, Float, Option[Float], Option[Float], Option[Int], Option[Int])
 
   extension (g: Game)
     def toRow: Row =
@@ -205,10 +205,10 @@ object Game {
         SeasonYear.unapply(y),
         HomeTeam.unapply(h),
         AwayTeam.unapply(a),
-        e1p.map(Rating.unapply),
-        e2p.map(Rating.unapply),
-        ep1.map(Prob.unapply),
-        ep2.map(Prob.unapply),
+        Rating.unapply(e1p),
+        Rating.unapply(e2p),
+        Prob.unapply(ep1),
+        Prob.unapply(ep2),
         e1post.map(Rating.unapply),
         e2post.map(Rating.unapply),
         Rating.unapply(r1p),
@@ -229,10 +229,10 @@ object Game {
         SeasonYear(season),
         HomeTeam(home),
         AwayTeam(away),
-        elo1_pre.map(Rating(_)),
-        elo2_pre.map(Rating(_)),
-        elo_prob1.map(Prob(_)),
-        elo_prob2.map(Prob(_)),
+        Rating(elo1_pre),
+        Rating(elo2_pre),
+        Prob(elo_prob1),
+        Prob(elo_prob2),
         elo1_post.map(Rating(_)),
         elo2_post.map(Rating(_)),
         Rating(rating1_pre),

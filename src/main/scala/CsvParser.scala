@@ -17,14 +17,10 @@ object CsvParser {
     val season = SeasonYear(row("season").toInt)
     val homeTeam = HomeTeam(row("team1"))
     val awayTeam = AwayTeam(row("team2"))
-    val elo1Pre =
-      if (row("elo1_pre").isEmpty) None else Some(Rating(row("elo1_pre").toFloat))
-    val elo2Pre =
-      if (row("elo2_pre").isEmpty) None else Some(Rating(row("elo2_pre").toFloat))
-    val eloProb1 =
-      if (row("elo_prob1").isEmpty) None else Some(Prob(row("elo_prob1").toFloat))
-    val eloProb2 =
-      if (row("elo_prob2").isEmpty) None else Some(Prob(row("elo_prob2").toFloat))
+    val elo1Pre = Rating(row("elo1_pre").toFloat)
+    val elo2Pre = Rating(row("elo2_pre").toFloat)
+    val eloProb1 = Prob(row("elo_prob1").toFloat)
+    val eloProb2 = Prob(row("elo_prob2").toFloat)
     val elo1_post =
       if (row("elo1_post").isEmpty) None else Some(Rating(row("elo1_post").toFloat))
     val elo2_post =
