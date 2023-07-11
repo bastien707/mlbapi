@@ -33,7 +33,7 @@ object Endpoints {
               case Some(c) => Response.text(s"${c} games")
               case None    => Response.text("No game in historical data").withStatus(Status.NoContent)
           } yield res) catchAll { _ =>
-            ZIO.succeed(Response.text("No games found").withStatus(Status.NotFound))
+            ZIO.succeed(Response.text("Something went wrong :/").withStatus(Status.NotFound))
           }
 
         
@@ -47,7 +47,7 @@ object Endpoints {
               case None => Response.text("No games found").withStatus(Status.NoContent)
             }
           } yield res) catchAll { _ =>
-            ZIO.succeed(Response.text("No games found").withStatus(Status.NotFound))
+            ZIO.succeed(Response.text("Something went wrong :/").withStatus(Status.NotFound))
           }
 
 
@@ -58,10 +58,10 @@ object Endpoints {
               case Some(value) => 
                 val json = value.toJson
                 Response.json("""{"wins": """ + json + """}""")
-              case None => Response.text("No games found").withStatus(Status.NoContent)
+              case None => Response.text("No match found between these teams").withStatus(Status.NoContent)
             }
           } yield res) catchAll { _ =>
-            ZIO.succeed(Response.text("No games found").withStatus(Status.NotFound))
+            ZIO.succeed(Response.text("Something went wrong :/").withStatus(Status.NotFound))
           }
 
         case Method.GET -> Root / "games" / "probs" / team1 / team2  =>
@@ -73,10 +73,10 @@ object Endpoints {
                 val awayTeamElo = value.elo2_pre
                 val homeTeamWinProbability = 1 / (1 + pow(10, (Rating.unapply(homeTeamElo) - Rating.unapply(awayTeamElo)) / 400.0))
                 Response.text(s"Probability of ${team1} winning against ${team2} is ${homeTeamWinProbability}")
-              case None => Response.text("No games found").withStatus(Status.NoContent)
+              case None => Response.text("No match found between these teams").withStatus(Status.NoContent)
             }
           } yield res) catchAll { _ =>
-            ZIO.succeed(Response.text("No games found").withStatus(Status.NotFound))
+            ZIO.succeed(Response.text("Something went wrong :/").withStatus(Status.NotFound))
         }
 
         case Method.GET -> Root / "ranking" / season  =>
@@ -86,10 +86,23 @@ object Endpoints {
               case Some(value) => 
                 val json = value.toJson
                 Response.json("""{"Ranking": """ + json + """}""")
-              case None => Response.text("No games found").withStatus(Status.NoContent)
+              case None => Response.text("There is no data for this season").withStatus(Status.NoContent)
             }
           } yield res) catchAll { _ =>
-            ZIO.succeed(Response.text("No games found").withStatus(Status.NotFound))
+            ZIO.succeed(Response.text("Something went wrong :/").withStatus(Status.NotFound))
+        }
+
+        case Method.GET -> Root / "historic"  =>
+          (for {
+            games <- getMatchHistoric()
+            res = games match {
+              case Some(value) => 
+                val json = value.toJson
+                Response.json("""{"Historic": """ + json + """}""")
+              case None => Response.text("Something went wrong :/").withStatus(Status.NoContent)
+            }
+          } yield res) catchAll { _ =>
+            ZIO.succeed(Response.text("Something went wrong :/").withStatus(Status.NotFound))
         }
       }
       .withDefaultErrorResponse

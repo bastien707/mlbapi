@@ -135,4 +135,25 @@ object Database {
       """.as[(Int, String, Float, Int)]
     ).map(Option(_))
   }
+
+  def getMatchHistoric(): ZIO[ZConnectionPool, Throwable, Option[Chunk[(Int, String, Int, Int, Int)]]] = transaction {
+    selectAll(
+      sql"""
+        SELECT
+            season,
+            team,
+            COUNT(CASE WHEN score1 > score2 THEN 1 END) AS victories,
+            COUNT(CASE WHEN score1 < score2 THEN 1 END) AS defeats,
+            COUNT(CASE WHEN score1 = score2 THEN 1 END) AS draws
+        FROM
+            (SELECT season, home_team AS team, score1, score2 FROM games
+            UNION ALL
+            SELECT season, away_team AS team, score2, score1 FROM games) AS all_teams
+        GROUP BY
+            season,
+            team;
+      """.as[(Int, String, Int, Int, Int)]
+    ).map(Option(_))
+  }
+
 }
