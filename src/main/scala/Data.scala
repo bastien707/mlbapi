@@ -320,3 +320,46 @@ object Ranking {
       )
   }
 }
+
+final case class Historics (
+  season: SeasonYear,
+  team: HomeTeam,
+  victories: Score,
+  defeats: Score,
+  draws: Score,
+)
+
+object Historics {
+  given CanEqual[Historics, Historics] = CanEqual.derived
+  implicit val codec: JsonCodec[Historics] = DeriveJsonCodec.gen[Historics]
+  implicit val historicsEncoder: JsonEncoder[Historics] = DeriveJsonEncoder.gen[Historics]
+  implicit val historicsDecoder: JsonDecoder[Historics] = DeriveJsonDecoder.gen[Historics]
+
+  def unapply(historics: Historics): (SeasonYear, HomeTeam, Score, Score, Score) =
+    (historics.season, historics.team, historics.victories, historics.defeats, historics.draws)
+
+  type Row = (Int, String, Int, Int, Int)
+
+  extension (h: Historics)
+    def toRow: Row =
+      val (s, t, v, d, dr) = Historics.unapply(h)
+      (
+        SeasonYear.unapply(s),
+        HomeTeam.unapply(t),
+        Score.unapply(v),
+        Score.unapply(d),
+        Score.unapply(dr)
+      )
+
+  implicit val jdbcDecoder: JdbcDecoder[Historics] = JdbcDecoder[Row]().map[Historics] {
+    t =>
+      val (season, team, victories, defeats, draws) = t
+      Historics(
+        SeasonYear(season),
+        HomeTeam(team),
+        Score(victories),
+        Score(defeats),
+        Score(draws)
+      )
+  }
+}
