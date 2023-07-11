@@ -246,3 +246,37 @@ object Game {
       )
   }
 }
+
+final case class Wins (
+  year: SeasonYear,
+  wins: Score
+)
+
+object Wins {
+  given CanEqual[Wins, Wins] = CanEqual.derived
+  implicit val codec: JsonCodec[Wins] = DeriveJsonCodec.gen[Wins]
+  implicit val winsEncoder: JsonEncoder[Wins] = DeriveJsonEncoder.gen[Wins]
+  implicit val winsDecoder: JsonDecoder[Wins] = DeriveJsonDecoder.gen[Wins]
+
+  def unapply(wins: Wins): (SeasonYear, Score) =
+    (wins.year, wins.wins)
+
+  type Row = (Int, Int)
+
+  extension (w: Wins)
+    def toRow: Row =
+      val (y, wi) = Wins.unapply(w)
+      (
+        SeasonYear.unapply(y),
+        Score.unapply(wi)
+      )
+
+  implicit val jdbcDecoder: JdbcDecoder[Wins] = JdbcDecoder[Row]().map[Wins] {
+    t =>
+      val (year, wins) = t
+      Wins(
+        SeasonYear(year),
+        Score(wins)
+      )
+  }
+}
