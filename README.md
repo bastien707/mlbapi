@@ -67,12 +67,30 @@ The following endpoints are defined:
    - **Path:** GET /games/{season}
    - **Description:** Retrieves the games for a specific season.
    - **Response:** Returns the games for the given season in JSON format if available or a message indicating no games found.
-
-4. **Games Won by Team Endpoint**
+  
+4. **Games winning probabilities Endpoint**
 
    - **Path:** GET /games/win/{team1}/{team2}
    - **Description:** Retrieves the number of victories for one team against the other.
    - **Response:** Returns the number of victories as JSON if available or a message indicating no games found.
+  
+5. **Games Won by Team Endpoint**
+
+   - **Path:** GET /games/probs/{team1}/{team2}
+   - **Description:** Compute the probability of win for the team1 against team2.
+   - **Response:** Returns the probabilities in the sentence "Probability of {team1} winning against {team2} is {probability}".
+  
+6. **Team top 10 Endpoint**
+
+   - **Path:** GET /ranking/{season}
+   - **Description:** Retrieve the top ten of teams by on their elo on a season.
+   - **Response:**  Returns the top 10 for the given season in JSON format if available or a message indicating no games found
+  
+7. **Team statistic historic Endpoint**
+
+   - **Path:** GET /historic
+   - **Description:** Retrieve the number of win, lost and draw match by team and by season.
+   - **Response:**  Returns all the statistics in JSON format if available or a message indicating no games found  
 
 ## Data structures
 
