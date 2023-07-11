@@ -8,6 +8,8 @@ import Database.*
 import mlb.HomeTeams.HomeTeam
 import mlb.AwayTeams.AwayTeam
 import mlb.SeasonYears.SeasonYear
+import scala.math.pow
+import mlb.Ratings.Rating
 
 object Endpoints {
   val endpoints: App[ZConnectionPool] =
@@ -61,6 +63,21 @@ object Endpoints {
           } yield res) catchAll { _ =>
             ZIO.succeed(Response.text("No games found").withStatus(Status.NotFound))
           }
+
+        case Method.GET -> Root / "games" / "probs" / team1 / team2  =>
+          (for {
+            games <- getLastMatch(HomeTeam(team1), AwayTeam(team2))
+            res = games match {
+              case Some(value) => 
+                val homeTeamElo = value.elo1_pre
+                val awayTeamElo = value.elo2_pre
+                val homeTeamWinProbability = 1 / (1 + pow(10, (Rating.unapply(homeTeamElo) - Rating.unapply(awayTeamElo)) / 400.0))
+                Response.text(s"Probability of ${team1} winning against ${team2} is ${homeTeamWinProbability}")
+              case None => Response.text("No games found").withStatus(Status.NoContent)
+            }
+          } yield res) catchAll { _ =>
+            ZIO.succeed(Response.text("No games found").withStatus(Status.NotFound))
+        }
       }
       .withDefaultErrorResponse
 }

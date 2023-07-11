@@ -97,4 +97,16 @@ object Database {
         .as[String]
     )
   }
+
+  def getLastMatch(
+      team1: HomeTeam,
+      team2: AwayTeam,
+  ): ZIO[ZConnectionPool, Throwable, Option[Game]] = transaction {
+    selectOne(
+      sql"SELECT * FROM games WHERE (home_team = ${HomeTeam
+          .unapply(team1)} AND away_team = ${AwayTeam.unapply(team2)}) OR (home_team = ${AwayTeam
+          .unapply(team2)} AND away_team = ${HomeTeam.unapply(team1)}) ORDER BY date DESC LIMIT 1;"
+        .as[Game]
+    )
+  }
 }
