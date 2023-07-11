@@ -246,3 +246,77 @@ object Game {
       )
   }
 }
+
+final case class Wins (
+  year: SeasonYear,
+  wins: Score
+)
+
+object Wins {
+  given CanEqual[Wins, Wins] = CanEqual.derived
+  implicit val codec: JsonCodec[Wins] = DeriveJsonCodec.gen[Wins]
+  implicit val winsEncoder: JsonEncoder[Wins] = DeriveJsonEncoder.gen[Wins]
+  implicit val winsDecoder: JsonDecoder[Wins] = DeriveJsonDecoder.gen[Wins]
+
+  def unapply(wins: Wins): (SeasonYear, Score) =
+    (wins.year, wins.wins)
+
+  type Row = (Int, Int)
+
+  extension (w: Wins)
+    def toRow: Row =
+      val (y, wi) = Wins.unapply(w)
+      (
+        SeasonYear.unapply(y),
+        Score.unapply(wi)
+      )
+
+  implicit val jdbcDecoder: JdbcDecoder[Wins] = JdbcDecoder[Row]().map[Wins] {
+    t =>
+      val (year, wins) = t
+      Wins(
+        SeasonYear(year),
+        Score(wins)
+      )
+  }
+}
+
+final case class Ranking (
+  position: Int,
+  team: HomeTeam,
+  elo: Rating,
+  season: SeasonYear
+)
+
+object Ranking {
+  given CanEqual[Ranking, Ranking] = CanEqual.derived
+  implicit val codec: JsonCodec[Ranking] = DeriveJsonCodec.gen[Ranking]
+  implicit val rankingEncoder: JsonEncoder[Ranking] = DeriveJsonEncoder.gen[Ranking]
+  implicit val rankingDecoder: JsonDecoder[Ranking] = DeriveJsonDecoder.gen[Ranking]
+
+  def unapply(ranking: Ranking): (Int, HomeTeam, Rating, SeasonYear) =
+    (ranking.position, ranking.team, ranking.elo, ranking.season)
+
+  type Row = (Int, String, Float, Int)
+
+  extension (r: Ranking)
+    def toRow: Row =
+      val (p, t, e, s) = Ranking.unapply(r)
+      (
+        p,
+        HomeTeam.unapply(t),
+        Rating.unapply(e),
+        SeasonYear.unapply(s)
+      )
+
+  implicit val jdbcDecoder: JdbcDecoder[Ranking] = JdbcDecoder[Row]().map[Ranking] {
+    t =>
+      val (position, team, elo, season) = t
+      Ranking(
+        position,
+        HomeTeam(team),
+        Rating(elo),
+        SeasonYear(season)
+      )
+  }
+}
