@@ -30,7 +30,7 @@ object MlbApi extends ZIOAppDefault {
   val app: ZIO[ZConnectionPool & Server, Throwable, Unit] = for {
     conn: Unit <- create
     source: CSVReader <- ZIO.succeed(
-      CSVReader.open(new java.io.File(Elop1))
+      CSVReader.open(new java.io.File(Elop2))
     )
     stream: Unit <- ZStream
       .fromIterator[Map[String, String]](source.iteratorWithHeaders)

@@ -23,6 +23,7 @@ object Endpoints {
             ZIO.succeed(Response.text("Database initialization failed").withStatus(Status.InternalServerError))
           }
 
+
         case Method.GET -> Root / "games" / "count" =>
           (for {
             count: Option[String] <- countGames
@@ -32,6 +33,7 @@ object Endpoints {
           } yield res) catchAll { _ =>
             ZIO.succeed(Response.text("No games found").withStatus(Status.NotFound))
           }
+
         
         case Method.GET -> Root / "games" / season => 
           (for {
@@ -45,7 +47,9 @@ object Endpoints {
           } yield res) catchAll { _ =>
             ZIO.succeed(Response.text("No games found").withStatus(Status.NotFound))
           }
-        case Method.GET -> Root / "teams" / team1 / team2 =>
+
+
+        case Method.GET -> Root / "games" / "win" / team1 / team2 =>
           (for {
             games <- getVictoriesNumber(HomeTeam(team1), AwayTeam(team2))
             res = games match {
