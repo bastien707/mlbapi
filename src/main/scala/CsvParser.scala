@@ -4,19 +4,18 @@ import com.github.tototoshi.csv._
 import Constants.*
 import java.time.LocalDate
 import GameDates.GameDate
-import HomeTeams.HomeTeam
-import AwayTeams.AwayTeam
 import SeasonYears.SeasonYear
 import Ratings.Rating
 import Probs.Prob
 import Scores.Score
+import Teams.Team
 
 object CsvParser {
   def parseGame(row: Map[String, String]): Game = {
     val date = GameDate(LocalDate.parse(row("date")))
     val season = SeasonYear(row("season").toInt)
-    val homeTeam = HomeTeam(row("team1"))
-    val awayTeam = AwayTeam(row("team2"))
+    val homeTeam = Team(row("team1"))
+    val awayTeam = Team(row("team2"))
     val elo1Pre = Rating(row("elo1_pre").toFloat)
     val elo2Pre = Rating(row("elo2_pre").toFloat)
     val eloProb1 = Prob(row("elo_prob1").toFloat)

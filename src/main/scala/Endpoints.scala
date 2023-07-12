@@ -5,8 +5,7 @@ import zio.jdbc._
 import zio.http._
 import zio.json.EncoderOps
 import Database.*
-import mlb.HomeTeams.HomeTeam
-import mlb.AwayTeams.AwayTeam
+import Teams.Team
 import mlb.SeasonYears.SeasonYear
 import scala.math.pow
 import mlb.Ratings.Rating
@@ -53,7 +52,7 @@ object Endpoints {
 
         case Method.GET -> Root / "games" / "win" / team1 / team2 =>
           (for {
-            games <- getVictoriesNumber(HomeTeam(team1), AwayTeam(team2))
+            games <- getVictoriesNumber(Team(team1), Team(team2))
             res = games match {
               case Some(value) => 
                 val json = value.toJson
@@ -66,7 +65,7 @@ object Endpoints {
 
         case Method.GET -> Root / "games" / "probs" / team1 / team2  =>
           (for {
-            games <- getLastMatch(HomeTeam(team1), AwayTeam(team2))
+            games <- getLastMatch(Team(team1), Team(team2))
             res = games match {
               case Some(value) => 
                 val homeTeamElo = value.elo1_pre

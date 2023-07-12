@@ -12,8 +12,7 @@ import zio.stream.ZStream
 import mlb.GameDates.GameDate
 import java.time.LocalDate
 import mlb.SeasonYears.SeasonYear
-import mlb.HomeTeams.HomeTeam
-import mlb.AwayTeams.AwayTeam
+import mlb.Teams.Team
 
 object Database {
 
@@ -90,17 +89,17 @@ object Database {
     }
 
   def getVictoriesNumber(
-      team1: HomeTeam,
-      team2: AwayTeam
+      team1: Team,
+      team2: Team
   ): ZIO[ZConnectionPool, Throwable, Option[Chunk[Wins]]] = transaction {
     selectAll(
       sql"""
       SELECT season, COUNT(*)
       FROM games
       WHERE
-        (home_team = ${HomeTeam.unapply(team1)} AND away_team = ${AwayTeam
+        (home_team = ${Team.unapply(team1)} AND away_team = ${Team
           .unapply(team2)} AND score1 > score2) OR
-        (home_team = ${AwayTeam.unapply(team2)} AND away_team = ${HomeTeam
+        (home_team = ${Team.unapply(team2)} AND away_team = ${Team
           .unapply(team1)} AND score2 > score1)
       GROUP BY season
     """.as[(Wins)]
@@ -108,13 +107,13 @@ object Database {
   }
 
   def getLastMatch(
-      team1: HomeTeam,
-      team2: AwayTeam
+      team1: Team,
+      team2: Team
   ): ZIO[ZConnectionPool, Throwable, Option[Game]] = transaction {
     selectOne(
-      sql"SELECT * FROM games WHERE (home_team = ${HomeTeam
-          .unapply(team1)} AND away_team = ${AwayTeam.unapply(team2)}) OR (home_team = ${AwayTeam
-          .unapply(team2)} AND away_team = ${HomeTeam.unapply(team1)}) ORDER BY date DESC LIMIT 1;"
+      sql"SELECT * FROM games WHERE (home_team = ${Team
+          .unapply(team1)} AND away_team = ${Team.unapply(team2)}) OR (home_team = ${Team
+          .unapply(team2)} AND away_team = ${Team.unapply(team1)}) ORDER BY date DESC LIMIT 1;"
         .as[Game]
     )
   }

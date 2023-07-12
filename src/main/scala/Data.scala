@@ -6,36 +6,20 @@ import zio.jdbc._
 import java.time.LocalDate
 import org.h2.tools.Csv
 
-object HomeTeams {
-
-  opaque type HomeTeam = String
-
-  object HomeTeam {
-
-    def apply(value: String): HomeTeam = value
-
-    def unapply(homeTeam: HomeTeam): String = homeTeam
-  }
-
-  given CanEqual[HomeTeam, HomeTeam] = CanEqual.derived
-  implicit val homeTeamEncoder: JsonEncoder[HomeTeam] = JsonEncoder.string
-  implicit val homeTeamDecoder: JsonDecoder[HomeTeam] = JsonDecoder.string
-}
-
-object AwayTeams {
-
-  opaque type AwayTeam = String
-
-  object AwayTeam {
-
-    def apply(value: String): AwayTeam = value
-
-    def unapply(awayTeam: AwayTeam): String = awayTeam
-  }
-
-  given CanEqual[AwayTeam, AwayTeam] = CanEqual.derived
-  implicit val awayTeamEncoder: JsonEncoder[AwayTeam] = JsonEncoder.string
-  implicit val awayTeamDecoder: JsonDecoder[AwayTeam] = JsonDecoder.string
+object Teams {
+  
+    opaque type Team = String
+  
+    object Team {
+  
+      def apply(value: String): Team = value
+  
+      def unapply(team: Team): String = team
+    }
+  
+    given CanEqual[Team, Team] = CanEqual.derived
+    implicit val teamEncoder: JsonEncoder[Team] = JsonEncoder.string
+    implicit val teamDecoder: JsonDecoder[Team] = JsonDecoder.string
 }
 
 object GameDates {
@@ -135,18 +119,16 @@ object Scores {
 
 import GameDates.*
 import SeasonYears.*
-import HomeTeams.*
-import AwayTeams.*
 import Probs.*
 import Ratings.*
 import Scores.*
-
+import Teams.*
 
 final case class Game(
     date: GameDate,
     season: SeasonYear,
-    homeTeam: HomeTeam,
-    awayTeam: AwayTeam,
+    homeTeam: Team,
+    awayTeam: Team,
     elo1_pre: Rating, 
     elo2_pre: Rating, 
     elo_prob1: Prob,
@@ -172,7 +154,7 @@ object Game {
 
   def unapply(
       game: Game
-  ): (GameDate, SeasonYear, HomeTeam, AwayTeam, Rating, Rating, Prob, Prob, Option[Rating], Option[Rating], Rating, Rating, Prob, Prob, Option[Rating], Option[Rating], Option[Score], Option[Score]) =
+  ): (GameDate, SeasonYear, Team, Team, Rating, Rating, Prob, Prob, Option[Rating], Option[Rating], Rating, Rating, Prob, Prob, Option[Rating], Option[Rating], Option[Score], Option[Score]) =
     (
       game.date,
       game.season,
@@ -203,8 +185,8 @@ object Game {
       (
         GameDate.unapply(d).toString,
         SeasonYear.unapply(y),
-        HomeTeam.unapply(h),
-        AwayTeam.unapply(a),
+        Team.unapply(h),
+        Team.unapply(a),
         Rating.unapply(e1p),
         Rating.unapply(e2p),
         Prob.unapply(ep1),
@@ -227,8 +209,8 @@ object Game {
       Game(
         GameDate(LocalDate.parse(date)),
         SeasonYear(season),
-        HomeTeam(home),
-        AwayTeam(away),
+        Team(home),
+        Team(away),
         Rating(elo1_pre),
         Rating(elo2_pre),
         Prob(elo_prob1),
@@ -283,7 +265,7 @@ object Wins {
 
 final case class Ranking (
   position: Int,
-  team: HomeTeam,
+  team: Team,
   elo: Rating,
   season: SeasonYear
 )
@@ -294,7 +276,7 @@ object Ranking {
   implicit val rankingEncoder: JsonEncoder[Ranking] = DeriveJsonEncoder.gen[Ranking]
   implicit val rankingDecoder: JsonDecoder[Ranking] = DeriveJsonDecoder.gen[Ranking]
 
-  def unapply(ranking: Ranking): (Int, HomeTeam, Rating, SeasonYear) =
+  def unapply(ranking: Ranking): (Int, Team, Rating, SeasonYear) =
     (ranking.position, ranking.team, ranking.elo, ranking.season)
 
   type Row = (Int, String, Float, Int)
@@ -304,7 +286,7 @@ object Ranking {
       val (p, t, e, s) = Ranking.unapply(r)
       (
         p,
-        HomeTeam.unapply(t),
+        Team.unapply(t),
         Rating.unapply(e),
         SeasonYear.unapply(s)
       )
@@ -314,7 +296,7 @@ object Ranking {
       val (position, team, elo, season) = t
       Ranking(
         position,
-        HomeTeam(team),
+        Team(team),
         Rating(elo),
         SeasonYear(season)
       )
@@ -323,7 +305,7 @@ object Ranking {
 
 final case class Historics (
   season: SeasonYear,
-  team: HomeTeam,
+  team: Team,
   victories: Score,
   defeats: Score,
   draws: Score,
@@ -335,7 +317,7 @@ object Historics {
   implicit val historicsEncoder: JsonEncoder[Historics] = DeriveJsonEncoder.gen[Historics]
   implicit val historicsDecoder: JsonDecoder[Historics] = DeriveJsonDecoder.gen[Historics]
 
-  def unapply(historics: Historics): (SeasonYear, HomeTeam, Score, Score, Score) =
+  def unapply(historics: Historics): (SeasonYear, Team, Score, Score, Score) =
     (historics.season, historics.team, historics.victories, historics.defeats, historics.draws)
 
   type Row = (Int, String, Int, Int, Int)
@@ -345,7 +327,7 @@ object Historics {
       val (s, t, v, d, dr) = Historics.unapply(h)
       (
         SeasonYear.unapply(s),
-        HomeTeam.unapply(t),
+        Team.unapply(t),
         Score.unapply(v),
         Score.unapply(d),
         Score.unapply(dr)
@@ -356,7 +338,7 @@ object Historics {
       val (season, team, victories, defeats, draws) = t
       Historics(
         SeasonYear(season),
-        HomeTeam(team),
+        Team(team),
         Score(victories),
         Score(defeats),
         Score(draws)
