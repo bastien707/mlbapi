@@ -8,6 +8,14 @@ This is a REST API that provides information about Major League Baseball (MLB) t
 
 To run the project you need to have sbt installed on your computer. You can download it here : https://www.scala-sbt.org/download.html. After that you just need to clone the project and run the command sbt run in the root of the project.
 
+### Configuration
+
+1. Insert in the Constants.scala file the path to the csv file.
+2. Replace the path the MlbAPI file [line 33](https://github.com/bastien707/mlbapi/blob/2f284119bc9ef83ffbd4796c921d941227f94131/src/main/scala/MlbAPI.scala#L33) replace "Elop'X'" by the one you previously defined.
+3. Same in the file Database.scala [line 48](https://github.com/bastien707/mlbapi/blob/2f284119bc9ef83ffbd4796c921d941227f94131/src/main/scala/Database.scala#L49) replace "Elop'X'" by the one you previously defined.
+
+### Run the project
+
 Before running it's recommended to clean the project with the command sbt clean.
 
 ```
@@ -36,11 +44,13 @@ sbt test
 
 The "Major League Baseball Dataset" from Kaggle is a comprehensive collection of data related to Major League Baseball (MLB) games, players, teams, and statistics. The dataset contains information about game-by-game Elo ratings and forecasts back to 1871. You can visit the Kaggle page for a more detailed description of the dataset.
 
-## API Endpoints
+# API Endpoints
 
-# MLB Endpoints
+## MLB Endpoints
 
 This Scala code defines several endpoints for an MLB (Major League Baseball) API. The endpoints are responsible for handling HTTP requests and interacting with a database using ZIO and ZIO JDBC.
+
+By default the API automatically loads the dataset from the csv file. You are free query localhost/init to initialize the database with the dataset.  
 
 ## Package Structure
 
@@ -90,8 +100,8 @@ The following endpoints are defined:
 
    - **Path:** GET /historic
    - **Description:** Retrieve the number of win, lost and draw match by team and by season.
-   - **Response:**  Returns all the statistics in JSON format if available or a message indicating no games found  
-
+   - **Response:**  Returns the number of win, lost and draw match by team and by season in JSON format using Historic object. If no games found, returns a message indicating no games found.
+   
 ## Data structures
 
 ### Database
@@ -113,7 +123,7 @@ We've made the decision to implement only one table in our database that contain
 - rating_prob1 Home team's probability of winning according to team ratings and starting pitchers
 - rating_prob2 Away team's probability of winning according to team ratings and starting pitchers
 - rating1_post Home team's rating after the game
-  rating2_post Away team's rating after the game
+- rating2_post Away team's rating after the game
 - score1 Home team's score
 - score2 Away team's score
 
@@ -123,11 +133,9 @@ We kept only columns with which we can do some interesting queries.
 
 We've decomposed our games rows into differents objects.
 
-**Teams** object contains the a team in a String format
-
 **SeasonYears** object contains the season of the game in an Integer format. We've decided to specify also that with a safe def to be sure that the season is between 1876 and the current year.
 
-**Teams** object: This object represents a team in the MLB. It defines the `HomeTeam` and `AwayTeam` opaque types, which wrap a team name as a `String`. These opaque types enhance type safety by preventing the accidental mixing of home and away team names.
+**Teams** object: This object represents a team in the MLB. It defines the `Team` opaque type, which wraps a team value as a `String`. Using an opaque type ensures that the team is always represented correctly and prevents confusion with other team-related values. Since there are two teams: away and home and there is no remarkable difference between them, we've decided to use only one object to represent them.
 
 **GameDates** object: This object represents the date of an MLB game. It defines the `GameDate` opaque type, which wraps a date value as a `LocalDate`. Using an opaque type ensures that the date is always represented correctly and prevents confusion with other date-related values.
 
@@ -142,3 +150,9 @@ We've decomposed our games rows into differents objects.
 **Game** case class: This case class represents an MLB game with various attributes. It includes fields such as `date`, `season`, `homeTeam`, `awayTeam`, `elo1_pre`, `elo2_pre`, `elo_prob1`, `elo_prob2`, `elo1_post`, `elo2_post`, `rating1_pre`, `rating2_pre`, `rating_prob1`, `rating_prob2`, `rating1_post`, `rating2_post`, `score1`, and `score2`. Each field corresponds to a specific aspect of an MLB game, such as date, teams, ratings, probabilities, and scores. The use of the opaque types ensures that the data is correctly typed and prevents mixing incompatible values. We've also decided to represent some values as Optional values. This is because some values are not always available in the dataset. For example, the `elo1_pre` and `elo2_pre` values are not available for the first game of the season. In such cases, the values are represented as `None`. This also allows us to distinguish between missing values and values that are actually 0.
 
 **Wins** case class: This case class is used to represent the number of wins for a team against another team. It includes two fields such as `season` and `wins`. The `season` field represents the season for which the wins are calculated, while the `wins` field represents the number of wins for the team against the selected one. The `wins` field is represented as an `Score` opaque type, which ensures that the value is always non-negative. And season is represented as a `SeasonYear` opaque type, which ensures that the value is always a valid season year.
+
+**Rankings** case class: This case class is used to represent the rankings of teams in a season. It includes two fields such as `position`, `teams`, `elo`, `season`. The `position` field represents the position of the team in the rankings, while the `teams` field represents the team name. The `elo` field represents the Elo rating of the team, while the `season` field represents the season for which the rankings are calculated. The `position` field is represented as an `Int`, while the `elo` field is represented as a `Rating` opaque type. The `season` field is represented as a `SeasonYear` opaque type, which ensures that the value is always a valid season year. And the `teams` field is represented as a `Teams` opaque type, which ensures that the value is always a valid team name.
+
+**Historics** case class: This case class is used to represent the historic of a team in a season. It includes four fields such as `season`, `team`, `wins`, `lost`, `draw`. The `season` field represents the season for which the historic is calculated, while the `team` field represents the team name. The `wins`, `lost` and `draw` fields represent the number of wins, lost and draw for the team in the season. The `season` field is represented as a `SeasonYear` opaque type, which ensures that the value is always a valid season year. And the `team` field is represented as a `Teams` opaque type, which ensures that the value is always a valid team name. The `wins`, `lost` and `draw` fields are represented as `Score` opaque types, which ensures that the values are always non-negative. We created this object because we wanted to have a better representation of the data. We wanted to have a representation of the historic of a team in a season corresponding to the endpoints we wanted to create.
+
+## Tests
