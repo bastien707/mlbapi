@@ -25,6 +25,9 @@ lazy val root = (project in file("."))
       "com.github.tototoshi" %% "scala-csv" % scalaCsvVersion,
     ).map(_ % Compile),
     libraryDependencies ++= Seq(
-      "org.scalameta" %% "munit" % "0.7.29"
+      "org.scalameta" %% "munit" % "0.7.29",
+      "dev.zio" %% "zio-test" % "2.0.15",
+      "dev.zio" %% "zio-test-sbt" % "2.0.15",
+      "com.github.poslegm" %% "munit-zio" % "0.1.1",
     ).map(_ % Test)
   )

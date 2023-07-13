@@ -12,6 +12,19 @@ import scala.math.pow
 import mlb.Ratings.Rating
 
 object Endpoints {
+
+  val static: App[Any] = Http.collect[Request] {
+    case Method.GET -> Root / "text" => Response.text("Hello MLB Fans!")
+    case Method.GET -> Root / "json" => Response.json("""{"greetings": "Hello MLB Fans!"}""")
+    case Method.GET -> Root / "init" => Response.text("Database initialized successfully")
+    case Method.GET -> Root / "games" / "count" => Response.text("No game in historical data").withStatus(Status.NoContent)
+    case Method.GET -> Root / "games" / season => Response.text("No games found").withStatus(Status.NoContent)
+    case Method.GET -> Root / "games" / "win" / team1 / team2 => Response.text("No match found between these teams").withStatus(Status.NoContent)
+    case Method.GET -> Root / "games" / "probs" / team1 / team2 => Response.text("No match found between these teams").withStatus(Status.NoContent)
+    case Method.GET -> Root / "ranking" / season => Response.text("There is no data for this season").withStatus(Status.NoContent)
+    case Method.GET -> Root / "historic" => Response.text("Something went wrong :/").withStatus(Status.NoContent)
+  }.withDefaultErrorResponse
+
   val endpoints: App[ZConnectionPool] =
     Http
       .collectZIO[Request] {
@@ -107,3 +120,5 @@ object Endpoints {
       }
       .withDefaultErrorResponse
 }
+
+
