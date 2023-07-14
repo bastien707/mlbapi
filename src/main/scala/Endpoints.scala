@@ -11,6 +11,25 @@ import scala.math.pow
 import mlb.Ratings.Rating
 
 object Endpoints {
+
+  val static: App[Any] = Http.collect[Request] {
+    case Method.GET -> Root / "text" => Response.text("Hello MLB Fans!")
+    case Method.GET -> Root / "json" => Response.json("""{"greetings": "Hello MLB Fans!"}""")
+    case Method.GET -> Root / "init" => Response.text("Database initialized successfully")
+    case Method.GET -> Root / "games" / "count" => Response.text("games count")
+    case Method.GET -> Root / "games" / "count_fail" => Response.text("No game in historical data").withStatus(Status.NoContent)
+    case Method.GET -> Root / "games" / season => Response.json("""{"games": """ +1+ """}""")
+    case Method.GET -> Root / "no_games" / "no_season" => Response.text("No games found").withStatus(Status.NoContent)
+    case Method.GET -> Root / "games" / "win" / team1 / team2 => Response.json("""{"wins":  teams1 }""")
+    case Method.GET -> Root / "no_games" / "no_win" / team1 / team2 => Response.text("No match found between these teams").withStatus(Status.NoContent)
+    case Method.GET -> Root / "games" / "probs" / team1 / team2 => Response.text(s"Probability of 1 winning against 2 is 10")
+    case Method.GET -> Root / "no_games" / "no_probs" / team1 / team2 => Response.text("No match found between these teams").withStatus(Status.NoContent)
+    case Method.GET -> Root / "ranking" / season => Response.json("""{"Ranking": 2 }""")
+    case Method.GET -> Root / "no_ranking" / season => Response.text("There is no data for this season").withStatus(Status.NoContent)
+    case Method.GET -> Root / "historic" => Response.json("""{"Historic": 2020 }""")
+    case Method.GET -> Root / "no_historic" => Response.text("Something went wrong :/").withStatus(Status.NoContent)
+  }.withDefaultErrorResponse
+
   val endpoints: App[ZConnectionPool] =
     Http
       .collectZIO[Request] {
