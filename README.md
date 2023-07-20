@@ -34,6 +34,12 @@ To run the project you can use the command sbt run.
 sbt run
 ```
 
+To deletes all generated files (in the target directory).
+
+```
+sbt clean
+```
+
 To run the tests you can use the command sbt test.
 
 ```
