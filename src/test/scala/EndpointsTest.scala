@@ -8,12 +8,12 @@ class MlbApiSpec extends munit.ZSuite {
 
   val app: App[Any] = mlb.Endpoints.static
 
-  testZ("should be ok") {
+  testZ("should be ok for text root") {
     val req = Request.get(URL(Root / "text"))
     assertZ(app.runZIO(req).isSuccess)
   }
 
-  testZ("should be ko") {
+  testZ("should be ko for root") {
     val req = Request.get(URL(Root))
     assertZ(app.runZIO(req).isFailure)
   }
@@ -42,7 +42,7 @@ class MlbApiSpec extends munit.ZSuite {
       assertZ(app.runZIO(req).map(_.status).map(_.code).map(_ == 200))
   }
 
-  testZ("should be No games found") {
+  testZ("should be No games and No season found") {
       val req = Request.get(URL(Root / "no_games" / "no_season"))
       assertZ(app.runZIO(req).isSuccess)
       assertZ(app.runZIO(req).map(_.status).map(_.code).map(_ == 204))
